@@ -80,9 +80,10 @@ COLOR = {
     "gg_qq_corr":  "#1f77b4",
 }
 
-MTTBAR_XLABEL = r"$m(t\bar{t})$ [GeV]"
-D_YLABEL      = r"$D = -3\langle\cos\theta\rangle$"
-MTTBAR_YLABEL = r"Normalised events / GeV"
+MTTBAR_XLABEL  = r"$m(t\bar{t})$ [GeV]"
+D_YLABEL       = r"$D = -3\,\mathrm{Tr}[C]$"
+MTTBAR_YLABEL  = r"Normalised events / GeV"
+DSIGMA_YLABEL  = r"$\mathrm{d}\sigma/\mathrm{d}m(t\bar{t})$ [pb/GeV]"
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Data loading (lazy, cached)
@@ -267,24 +268,24 @@ def norm_stats(m: np.ndarray, cos: np.ndarray, w: np.ndarray,
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _spin_label(ax: plt.Axes) -> None:
-    ax.text(0.03, 0.97, "Spin@Threshold'26",
-            transform=ax.transAxes, ha="left", va="top",
+    ax.text(0.97, 0.97, "Spin@Threshold'26",
+            transform=ax.transAxes, ha="right", va="top",
             fontsize=13, fontweight="bold")
 
 
-def _thresh_line(ax: plt.Axes) -> None:
-    ax.axvline(THRESHOLD, color="lightgray", lw=1.0, ls="--", zorder=0)
-    # x in data coords, y in axes fraction — robust regardless of ylim
-    trans = blended_transform_factory(ax.transData, ax.transAxes)
-    ax.text(THRESHOLD + 0.5, 0.97, r"$2m_t = 345\,\mathrm{GeV}$",
-            transform=trans, color="lightgray", fontsize=10,
-            va="top", ha="left", rotation=90, rotation_mode="anchor",
-            clip_on=True)
+def _thresh_line(ax: plt.Axes, show_text: bool = True,
+                 y_text: float = 0.62, x_offset: float = 0.8) -> None:
+    ax.axvline(THRESHOLD, color="#aaaaaa", lw=1.0, ls="--", zorder=0)
+    if show_text:
+        trans = blended_transform_factory(ax.transData, ax.transAxes)
+        ax.text(THRESHOLD + x_offset, y_text, r"$2m_t = 345\,\mathrm{GeV}$",
+                transform=trans, color="#777777", fontsize=10,
+                va="top", ha="left", rotation=90, rotation_mode="anchor",
+                clip_on=True)
 
 
 def _style_main(ax: plt.Axes, xlabel: str, ylabel: str,
                 xlim: tuple, ylim: tuple | None = None,
-                legend_loc: str = "best",
                 threshold: bool = True,
                 D_lines: bool = False,
                 show_xlabel: bool = True) -> None:
@@ -299,7 +300,9 @@ def _style_main(ax: plt.Axes, xlabel: str, ylabel: str,
     ax.set_xlim(*xlim)
     if ylim is not None:
         ax.set_ylim(*ylim)
-    ax.legend(fontsize=12, loc=legend_loc)
+    # Legend in upper right; bbox_to_anchor leaves space for the spin label above
+    ax.legend(fontsize=12, loc="upper right",
+              bbox_to_anchor=(0.97, 0.91), borderaxespad=0)
     _spin_label(ax)
 
 
@@ -318,7 +321,7 @@ def _style_ratio(axr: plt.Axes, xlabel: str, xlim: tuple,
                  threshold: bool = True) -> None:
     axr.axhline(1.0, color="black", lw=0.8, zorder=0)
     if threshold:
-        _thresh_line(axr)
+        _thresh_line(axr, show_text=False)
     axr.set_xlabel(xlabel, fontsize=14)
     axr.set_ylabel(ylabel, fontsize=12)
     axr.set_xlim(*xlim)
@@ -379,34 +382,52 @@ def _draw_errorbars(ax: plt.Axes, bin_edges: np.ndarray,
                     ls="none", capsize=2, rasterized=True)
 
 
+def _ratio_errors(vals, errs, ref_vals, ref_errs):
+    """Propagate uncertainties for ratio = vals / ref_vals (no correlation assumed)."""
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ratio = np.where(ref_vals != 0, vals / ref_vals, np.nan)
+        if errs is not None and ref_errs is not None:
+            rel2 = (np.where(vals     != 0, errs     / vals,     0.0))**2 \
+                 + (np.where(ref_vals != 0, ref_errs / ref_vals, 0.0))**2
+            err_ratio = np.abs(ratio) * np.sqrt(rel2)
+        else:
+            err_ratio = None
+    return ratio, err_ratio
+
+
 def _draw_ratio_steps(axr: plt.Axes, bin_edges: np.ndarray,
                       curves: list[dict], ref_idx: int = 0) -> None:
-    ref  = curves[ref_idx]["vals"]
-    xstep = np.append(bin_edges[:-1], bin_edges[-1])
+    ref_vals = curves[ref_idx]["vals"]
+    ref_errs = curves[ref_idx].get("errs")
+    xstep    = np.append(bin_edges[:-1], bin_edges[-1])
+    cen      = 0.5 * (bin_edges[:-1] + bin_edges[1:])
     for i, c in enumerate(curves):
         if i == ref_idx:
-            axr.step(xstep, np.append(np.ones_like(c["vals"]),
-                                       np.ones(1)),
+            axr.step(xstep, np.append(np.ones_like(ref_vals), [1.0]),
                      where="post", color=c["color"], lw=1.5)
             continue
-        with np.errstate(invalid="ignore", divide="ignore"):
-            ratio = np.where(ref != 0, c["vals"] / ref, np.nan)
+        ratio, err_ratio = _ratio_errors(c["vals"], c.get("errs"), ref_vals, ref_errs)
         axr.step(xstep, np.append(ratio, ratio[-1]),
                  where="post", color=c["color"], lw=1.5)
+        if err_ratio is not None:
+            axr.errorbar(cen, ratio, yerr=err_ratio,
+                         fmt="none", color=c["color"], capsize=0, lw=0.8,
+                         rasterized=True)
 
 
 def _draw_ratio_errorbars(axr: plt.Axes, bin_edges: np.ndarray,
                           curves: list[dict], ref_idx: int = 0) -> None:
-    ref = curves[ref_idx]["vals"]
-    x   = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    ref_vals = curves[ref_idx]["vals"]
+    ref_errs = curves[ref_idx].get("errs")
+    x        = 0.5 * (bin_edges[:-1] + bin_edges[1:])
     for i, c in enumerate(curves):
         if i == ref_idx:
             axr.axhline(1.0, color=c["color"], lw=1.5)
             continue
-        with np.errstate(invalid="ignore", divide="ignore"):
-            ratio = np.where(ref != 0, c["vals"] / ref, np.nan)
-        axr.scatter(x, ratio, color=c["color"],
-                    marker=c.get("marker", "o"), s=10, rasterized=True)
+        ratio, err_ratio = _ratio_errors(c["vals"], c.get("errs"), ref_vals, ref_errs)
+        axr.errorbar(x, ratio, yerr=err_ratio,
+                     color=c["color"], marker=c.get("marker", "o"),
+                     ms=3.5, ls="none", capsize=2, rasterized=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -415,7 +436,7 @@ def _draw_ratio_errorbars(axr: plt.Axes, bin_edges: np.ndarray,
 
 def plot_mttbar(bin_edges: np.ndarray, curves: list[dict],
                 xlim: tuple, ylim: tuple | None = None,
-                legend_loc: str = "best",
+                ylabel: str = MTTBAR_YLABEL,
                 ratio_to: int | None = None,
                 ratio_ylim: tuple = (0.5, 1.5),
                 bands: list[dict] | None = None,
@@ -443,8 +464,8 @@ def plot_mttbar(bin_edges: np.ndarray, curves: list[dict],
 
     if log_y:
         axm.set_yscale("log")
-    _style_main(axm, MTTBAR_XLABEL, MTTBAR_YLABEL, xlim, ylim,
-                legend_loc=legend_loc, show_xlabel=not has_ratio)
+    _style_main(axm, MTTBAR_XLABEL, ylabel, xlim, ylim,
+                show_xlabel=not has_ratio)
 
     if has_ratio:
         if bands:
@@ -466,7 +487,6 @@ def plot_mttbar(bin_edges: np.ndarray, curves: list[dict],
 
 def plot_D(bin_edges: np.ndarray, curves: list[dict],
            xlim: tuple, ylim: tuple = (-1.0, 1.0),
-           legend_loc: str = "upper right",
            ratio_to: int | None = None,
            ratio_ylim: tuple = (0.5, 1.5),
            figsize: tuple = (8, 5),
@@ -484,8 +504,7 @@ def plot_D(bin_edges: np.ndarray, curves: list[dict],
 
     _draw_errorbars(axm, bin_edges, curves)
     _style_main(axm, xlabel, D_YLABEL, xlim, ylim,
-                legend_loc=legend_loc, D_lines=True,
-                show_xlabel=not has_ratio)
+                D_lines=True, show_xlabel=not has_ratio)
 
     if has_ratio:
         _draw_ratio_errorbars(axr, bin_edges, curves, ref_idx=ratio_to)
@@ -502,10 +521,10 @@ def plot_D(bin_edges: np.ndarray, curves: list[dict],
 #  Individual plots
 # ─────────────────────────────────────────────────────────────────────────────
 
-M_MIN, M_MAX = 300.0, 500.0
-M_STEP       = 2.0
-BIN_EDGES    = np.arange(M_MIN, M_MAX + M_STEP, M_STEP)
-XLIM_FULL    = (M_MIN, M_MAX)
+M_MIN, M_MAX    = 300.0, 500.0
+XLIM_FULL       = (M_MIN, M_MAX)
+BIN_EDGES_M     = np.arange(M_MIN, M_MAX + 2.0, 2.0)   # 2 GeV — mttbar plots
+BIN_EDGES_D     = np.arange(M_MIN, M_MAX + 5.0, 5.0)   # 5 GeV — D vs m plots
 
 M_THR_STEP   = 0.5
 M_THR_MIN    = 330.0
@@ -523,7 +542,7 @@ def _make_D_curve(name: str, key: str,
                   cumulative: bool = False) -> dict:
     """Build a D curve dict from a named sample (or pre-supplied arrays)."""
     if bin_edges is None:
-        bin_edges = BIN_EDGES
+        bin_edges = BIN_EDGES_D
     if m_arr is None:
         m_arr, cos_arr, w_arr = _mcw(name, w_col)
     s = norm_stats(m_arr, cos_arr, w_arr, bin_edges)
@@ -538,12 +557,11 @@ def plot1_mttbar_generators():
     curves = []
     for name, key in [("hvq", "hvq"), ("amcatnlo", "amcatnlo"), ("madgraph", "madgraph")]:
         m, w = _mw(name)
-        v, e = weighted_hist(m, w, BIN_EDGES)
+        v, e = weighted_hist(m, w, BIN_EDGES_M)
         curves.append({"vals": v, "errs": e, "label": LABEL[key], "color": COLOR[key]})
 
-    plot_mttbar(BIN_EDGES, curves, xlim=XLIM_FULL,
-                legend_loc="upper right",
-                figsize=(8, 5), log_y=True,
+    plot_mttbar(BIN_EDGES_M, curves, xlim=XLIM_FULL,
+                ylim=(1e-6, 1e0), figsize=(8, 5), log_y=True,
                 output="plot1_mttbar_generators")
 
 
@@ -556,22 +574,33 @@ def plot2_D_generators():
         _make_D_curve("amcatnlo", "amcatnlo"),
         _make_D_curve("madgraph", "madgraph"),
     ]
-    plot_D(BIN_EDGES, curves, xlim=XLIM_FULL,
-           legend_loc="lower right", figsize=(8, 5),
-           output="plot2_D_generators")
+    plot_D(BIN_EDGES_D, curves, xlim=XLIM_FULL,
+           figsize=(8, 5), output="plot2_D_generators")
 
 
 # ── Plot 3: D per channel, 3 generators, 3 panels ────────────────────────────
 
+THRESH_Y_TEXT = {"gg": 0.62, "qq": 0.10, "qg": 0.62}
+
+
 def plot3_D_channels():
     print("Plot 3: D per channel")
-    channels   = ["gg", "qq", "qg"]
-    gen_specs  = [
+    channels  = ["gg", "qq", "qg"]
+    gen_specs = [
         ("hvq",      "hvq",      "-"),
         ("amcatnlo", "amcatnlo", "--"),
         ("madgraph", "madgraph", ":"),
     ]
-    x = 0.5 * (BIN_EDGES[:-1] + BIN_EDGES[1:])
+    x = 0.5 * (BIN_EDGES_D[:-1] + BIN_EDGES_D[1:])
+
+    # Pre-compute channel fractions (sum of weights in channel / total)
+    # fracs[name][ch] = fraction (0–1)
+    fracs: dict[str, dict[str, float]] = {}
+    for name, key, _ in gen_specs:
+        m, cos, w = _mcw(name)
+        masks = _channel_masks(name)
+        total = w.sum()
+        fracs[name] = {ch: w[masks[ch]].sum() / total for ch in channels}
 
     fig, axes = plt.subplots(1, 3, figsize=(15, 5), sharey=True)
 
@@ -580,14 +609,16 @@ def plot3_D_channels():
             m, cos, w = _mcw(name)
             masks = _channel_masks(name)
             m_ch, cos_ch, w_ch = m[masks[ch]], cos[masks[ch]], w[masks[ch]]
-            s = norm_stats(m_ch, cos_ch, w_ch, BIN_EDGES)
+            s = norm_stats(m_ch, cos_ch, w_ch, BIN_EDGES_D)
             vals, errs = D_diff(s)
+            pct = fracs[name][ch] * 100
+            label = f"{LABEL[key]}: {pct:.1f}%"
             ax.errorbar(x, vals, yerr=errs,
-                        color=COLOR[key], label=LABEL[key],
+                        color=COLOR[key], label=label,
                         marker="o", ms=3.5, ls="none",
                         capsize=2, rasterized=True)
 
-        _thresh_line(ax)
+        _thresh_line(ax, y_text=THRESH_Y_TEXT[ch])
         ax.axhline(0,  color="k",    lw=0.7, ls=":",  zorder=0)
         ax.axhline(-1, color="gray", lw=0.7, ls="--", alpha=0.5, zorder=0)
         ax.set_title(LABEL[ch], fontsize=13)
@@ -595,7 +626,8 @@ def plot3_D_channels():
         ax.set_xlim(*XLIM_FULL)
         ax.set_ylim(-1.0, 1.0)
         ax.tick_params(labelsize=12)
-        ax.legend(fontsize=11, loc="lower right")
+        ax.legend(fontsize=11, loc="upper right",
+                  bbox_to_anchor=(0.97, 0.91), borderaxespad=0)
         _spin_label(ax)
 
     axes[0].set_ylabel(D_YLABEL, fontsize=14)
@@ -611,53 +643,52 @@ def _hvq_channel_stats(bin_edges: np.ndarray) -> dict:
     total_w = w.sum()
     ch_stats = {}
     for ch, mask in masks.items():
-        ch_stats[ch] = norm_stats(m[mask], cos[mask], w[mask], bin_edges)
+        # Divide by the TOTAL weight so channel fractions are preserved.
+        # Using each channel's own w[mask].sum() would normalise every channel
+        # to 1 independently, destroying the gg/qq/qg relative contributions.
+        ch_stats[ch] = bin_stats(m[mask], cos[mask], w[mask] / total_w, bin_edges)
     return ch_stats
 
 
 def plot4_D_corrections_diff():
     print("Plot 4: D corrections (differential)")
-    ch_stats = _hvq_channel_stats(BIN_EDGES)
-    x        = 0.5 * (BIN_EDGES[:-1] + BIN_EDGES[1:])
-
+    ch_stats = _hvq_channel_stats(BIN_EDGES_D)
+    # no_corr drawn last so it overlays the others above the threshold
     corr_specs = [
-        (None,                                 "no_corr"),
-        ({"gg": -1.0},                         "gg_corr"),
-        ({"gg": -1.0, "qq": 1/3},              "gg_qq_corr"),
+        ({"gg": -1.0},            "gg_corr"),
+        ({"gg": -1.0, "qq": 1/3}, "gg_qq_corr"),
+        (None,                    "no_corr"),
     ]
     curves = []
     for corrections, key in corr_specs:
-        vals, errs = apply_corrections(ch_stats, BIN_EDGES, corrections)
+        vals, errs = apply_corrections(ch_stats, BIN_EDGES_D, corrections)
         curves.append({"vals": vals, "errs": errs,
                        "label": LABEL[key], "color": COLOR[key]})
 
-    plot_D(BIN_EDGES, curves, xlim=XLIM_FULL,
-           legend_loc="lower right", figsize=(8, 5),
-           output="plot4_D_corrections_diff")
+    plot_D(BIN_EDGES_D, curves, xlim=XLIM_FULL,
+           figsize=(8, 5), output="plot4_D_corrections_diff")
 
 
 def plot5_D_corrections_cum():
     print("Plot 5: D corrections (cumulative)")
-    ch_stats = _hvq_channel_stats(BIN_EDGES)
-    x        = BIN_EDGES[1:]   # upper edges for cumulative
-
+    ch_stats = _hvq_channel_stats(BIN_EDGES_D)
     corr_specs = [
-        (None,                   "no_corr"),
-        ({"gg": -1.0},           "gg_corr"),
+        (None,                    "no_corr"),
+        ({"gg": -1.0},            "gg_corr"),
         ({"gg": -1.0, "qq": 1/3}, "gg_qq_corr"),
     ]
     curves = []
     for corrections, key in corr_specs:
-        vals, errs = apply_corrections(ch_stats, BIN_EDGES, corrections,
+        vals, errs = apply_corrections(ch_stats, BIN_EDGES_D, corrections,
                                        cumulative=True)
         curves.append({"vals": vals, "errs": errs,
                        "label": LABEL[key], "color": COLOR[key]})
 
     ylabel_cum = r"$D$ (integrated up to $m(t\bar{t})$)"
     fig, ax = plt.subplots(figsize=(8, 5))
-    _draw_errorbars(ax, BIN_EDGES, curves)
+    _draw_errorbars(ax, BIN_EDGES_D, curves)
     _style_main(ax, MTTBAR_XLABEL, ylabel_cum, XLIM_FULL, ylim=(-1.0, 1.0),
-                legend_loc="lower right", D_lines=True)
+                D_lines=True)
     fig.tight_layout()
     _save(fig, "plot5_D_corrections_cum")
 
@@ -666,26 +697,27 @@ def plot5_D_corrections_cum():
 
 def plot6_mttbar_nrc():
     print("Plot 6: m(ttbar) NRC variations")
-    m, _ = _mw("nrc")   # preload to share m array
-    df_nrc = _load("nrc")
-    m_nrc = df_nrc[M_COL].to_numpy()
-
-    w_nom  = df_nrc[W_NOM].to_numpy()
-    w_i0   = df_nrc[W_NRC_I0].to_numpy()
+    df_nrc  = _load("nrc")
+    m_nrc   = df_nrc[M_COL].to_numpy()
+    w_nom   = df_nrc[W_NOM].to_numpy()
+    w_i0    = df_nrc[W_NRC_I0].to_numpy()
     w_cl_lo = df_nrc[W_CL_LO].to_numpy()
     w_cl_hi = df_nrc[W_CL_HI].to_numpy()
 
-    # Normalise to nominal total weight so ratio ≈ 1 far from threshold
-    ref_norm = w_nom.sum()
+    # All weights share the same norm: sum(w_i0)/XS_HVQ
+    # → weighted_hist gives dσ/dm [pb/GeV] for every weight vector
+    # NRC nominal gets XS_NOM = XS_HVQ × sum(w_nom)/sum(w_i0); the sum(w_nom) cancels.
+    scale = w_i0.sum() / XS_HVQ
 
-    v_nom, e_nom = weighted_hist(m_nrc, w_nom, BIN_EDGES_THR, norm=ref_norm)
-    v_i0,  e_i0  = weighted_hist(m_nrc, w_i0,  BIN_EDGES_THR, norm=ref_norm)
-    v_lo,  _     = weighted_hist(m_nrc, w_cl_lo, BIN_EDGES_THR, norm=ref_norm)
-    v_hi,  _     = weighted_hist(m_nrc, w_cl_hi, BIN_EDGES_THR, norm=ref_norm)
+    v_i0,  e_i0  = weighted_hist(m_nrc, w_i0,    BIN_EDGES_THR, norm=scale)
+    v_nom, e_nom  = weighted_hist(m_nrc, w_nom,   BIN_EDGES_THR, norm=scale)
+    v_lo,  _      = weighted_hist(m_nrc, w_cl_lo, BIN_EDGES_THR, norm=scale)
+    v_hi,  _      = weighted_hist(m_nrc, w_cl_hi, BIN_EDGES_THR, norm=scale)
 
+    # NRCi0 is the reference (ratio denominator); put it first
     curves = [
-        {"vals": v_nom, "errs": e_nom, "label": LABEL["nrc_nominal"], "color": COLOR["nrc_nominal"]},
         {"vals": v_i0,  "errs": e_i0,  "label": LABEL["nrc_i0"],      "color": COLOR["nrc_i0"]},
+        {"vals": v_nom, "errs": e_nom, "label": LABEL["nrc_nominal"], "color": COLOR["nrc_nominal"]},
     ]
     lo_env = np.minimum(v_lo, v_hi)
     hi_env = np.maximum(v_lo, v_hi)
@@ -693,7 +725,7 @@ def plot6_mttbar_nrc():
                "label": LABEL["coulomb"], "color": "gray", "alpha": 0.35}]
 
     plot_mttbar(BIN_EDGES_THR, curves, xlim=XLIM_THR,
-                legend_loc="upper right",
+                ylim=(0, 0.5), ylabel=DSIGMA_YLABEL,
                 ratio_to=0, ratio_ylim=(0.5, 1.5),
                 bands=bands, figsize=(8, 6),
                 output="plot6_mttbar_nrc")
@@ -701,24 +733,21 @@ def plot6_mttbar_nrc():
 
 # ── Plot 7: m(ttbar) NRC nominal vs NRCi0+Fuks vs NRCi0+Toy, ratio ──────────
 
-def _xs_combined_hist(m_cont, w_cont, xs_cont,
-                      m_sig,  w_sig,  xs_sig,
-                      bin_edges: np.ndarray):
+def _xs_combined_hist_abs(m_cont, w_cont, xs_cont,
+                          m_sig,  w_sig,  xs_sig,
+                          bin_edges: np.ndarray):
     """
-    Combine a continuum and a signal sample with xs-weighted normalisation.
+    Build dσ/dm [pb/GeV] by summing the absolute spectra of two samples.
 
-    Each sample is first normalised to unit area (shape), then mixed with
-    weights xs_cont and xs_sig respectively, and finally renormalised so the
-    combined distribution also integrates to 1.  This sets the relative
-    contribution of signal vs continuum by their physical cross sections.
-
-    Returns (vals, errs) in [events / GeV], normalised to unit area.
+    Each sample is independently normalised to unit area (shape [1/GeV]),
+    then multiplied by its physical cross section [pb] to give dσ/dm [pb/GeV].
+    The two contributions are added directly — no re-normalisation — so the
+    combined integral equals xs_cont + xs_sig.
     """
-    h_cont, e_cont = weighted_hist(m_cont, w_cont, bin_edges)   # shape of continuum
-    h_sig,  e_sig  = weighted_hist(m_sig,  w_sig,  bin_edges)   # shape of signal
-    total_xs = xs_cont + xs_sig
-    vals = (xs_cont * h_cont + xs_sig * h_sig) / total_xs
-    errs = np.sqrt((xs_cont * e_cont)**2 + (xs_sig * e_sig)**2) / total_xs
+    h_cont, e_cont = weighted_hist(m_cont, w_cont, bin_edges)
+    h_sig,  e_sig  = weighted_hist(m_sig,  w_sig,  bin_edges)
+    vals = xs_cont * h_cont + xs_sig * h_sig
+    errs = np.sqrt((xs_cont * e_cont)**2 + (xs_sig * e_sig)**2)
     return vals, errs
 
 
@@ -740,29 +769,46 @@ def _xs_combined_stats(m_cont, cos_cont, w_cont, xs_cont,
 
 def plot7_mttbar_toponium():
     print("Plot 7: m(ttbar) NRC nominal vs toponium combinations")
-    df_nrc = _load("nrc")
-    m_nrc  = df_nrc[M_COL].to_numpy()
-    w_nom  = df_nrc[W_NOM].to_numpy()
-    w_i0   = df_nrc[W_NRC_I0].to_numpy()
+    df_nrc  = _load("nrc")
+    m_nrc   = df_nrc[M_COL].to_numpy()
+    w_nom   = df_nrc[W_NOM].to_numpy()
+    w_i0    = df_nrc[W_NRC_I0].to_numpy()
+    w_cl_lo = df_nrc[W_CL_LO].to_numpy()
+    w_cl_hi = df_nrc[W_CL_HI].to_numpy()
 
     m_fuks, w_fuks = _mw("fuks")
     m_toy,  w_toy  = _mw("toy")
 
-    v_nom,  e_nom  = weighted_hist(m_nrc, w_nom, BIN_EDGES_THR)
-    v_fuks, e_fuks = _xs_combined_hist(m_nrc, w_i0, XS_HVQ,
-                                        m_fuks, w_fuks, XS_TOPONIUM, BIN_EDGES_THR)
-    v_toy,  e_toy  = _xs_combined_hist(m_nrc, w_i0, XS_HVQ,
-                                        m_toy,  w_toy,  XS_TOPONIUM, BIN_EDGES_THR)
+    # Shared norm: dσ/dm [pb/GeV] for all NRC-file weights (same as plot 6)
+    scale = w_i0.sum() / XS_HVQ
 
+    v_i0,  e_i0   = weighted_hist(m_nrc, w_i0,    BIN_EDGES_THR, norm=scale)
+    v_nom, e_nom   = weighted_hist(m_nrc, w_nom,   BIN_EDGES_THR, norm=scale)
+    v_cl_lo, _     = weighted_hist(m_nrc, w_cl_lo, BIN_EDGES_THR, norm=scale)
+    v_cl_hi, _     = weighted_hist(m_nrc, w_cl_hi, BIN_EDGES_THR, norm=scale)
+
+    # Toponium: add absolute NRCi0 spectrum + absolute signal spectrum
+    v_fuks, e_fuks = _xs_combined_hist_abs(m_nrc, w_i0, XS_HVQ,
+                                            m_fuks, w_fuks, XS_TOPONIUM, BIN_EDGES_THR)
+    v_toy,  e_toy  = _xs_combined_hist_abs(m_nrc, w_i0, XS_HVQ,
+                                            m_toy,  w_toy,  XS_TOPONIUM, BIN_EDGES_THR)
+
+    lo_env = np.minimum(v_cl_lo, v_cl_hi)
+    hi_env = np.maximum(v_cl_lo, v_cl_hi)
+    bands  = [{"lo": lo_env, "hi": hi_env,
+               "label": LABEL["coulomb"], "color": "gray", "alpha": 0.35}]
+
+    # NRCi0 (blue) is first and is the ratio reference
     curves = [
-        {"vals": v_nom,  "errs": e_nom,  "label": LABEL["nrc_nominal"], "color": COLOR["nrc_nominal"]},
+        {"vals": v_i0,  "errs": e_i0,  "label": LABEL["nrc_i0"],      "color": COLOR["nrc_i0"]},
+        {"vals": v_nom, "errs": e_nom,  "label": LABEL["nrc_nominal"], "color": COLOR["nrc_nominal"]},
         {"vals": v_fuks, "errs": e_fuks, "label": LABEL["nrc_i0_fuks"], "color": COLOR["nrc_i0_fuks"]},
         {"vals": v_toy,  "errs": e_toy,  "label": LABEL["nrc_i0_toy"],  "color": COLOR["nrc_i0_toy"]},
     ]
     plot_mttbar(BIN_EDGES_THR, curves, xlim=XLIM_THR,
-                legend_loc="upper right",
+                ylim=(0, 0.5), ylabel=DSIGMA_YLABEL,
                 ratio_to=0, ratio_ylim=(0.5, 1.5),
-                figsize=(8, 6), output="plot7_mttbar_toponium")
+                bands=bands, figsize=(8, 6), output="plot7_mttbar_toponium")
 
 
 # ── Plot 8: D NRC nominal vs NRCi0+Fuks vs NRCi0+Toy, ratio ─────────────────
@@ -778,11 +824,11 @@ def plot8_D_toponium():
     m_fuks, cos_fuks, w_fuks = _mcw("fuks")
     m_toy,  cos_toy,  w_toy  = _mcw("toy")
 
-    s_nom  = norm_stats(m_nrc, cos_nrc, w_nom, BIN_EDGES)
+    s_nom  = norm_stats(m_nrc, cos_nrc, w_nom, BIN_EDGES_D)
     s_fuks = _xs_combined_stats(m_nrc, cos_nrc, w_i0,   XS_HVQ,
-                                 m_fuks, cos_fuks, w_fuks, XS_TOPONIUM, BIN_EDGES)
+                                 m_fuks, cos_fuks, w_fuks, XS_TOPONIUM, BIN_EDGES_D)
     s_toy  = _xs_combined_stats(m_nrc, cos_nrc, w_i0,   XS_HVQ,
-                                 m_toy,  cos_toy,  w_toy,  XS_TOPONIUM, BIN_EDGES)
+                                 m_toy,  cos_toy,  w_toy,  XS_TOPONIUM, BIN_EDGES_D)
 
     v_nom,  e_nom  = D_diff(s_nom)
     v_fuks, e_fuks = D_diff(s_fuks)
@@ -793,8 +839,7 @@ def plot8_D_toponium():
         {"vals": v_fuks, "errs": e_fuks, "label": LABEL["nrc_i0_fuks"], "color": COLOR["nrc_i0_fuks"]},
         {"vals": v_toy,  "errs": e_toy,  "label": LABEL["nrc_i0_toy"],  "color": COLOR["nrc_i0_toy"]},
     ]
-    plot_D(BIN_EDGES, curves, xlim=XLIM_FULL,
-           legend_loc="lower right",
+    plot_D(BIN_EDGES_D, curves, xlim=XLIM_FULL,
            ratio_to=0, ratio_ylim=(0.5, 1.5),
            figsize=(8, 6), output="plot8_D_toponium")
 
