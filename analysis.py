@@ -527,10 +527,10 @@ BIN_EDGES_M     = np.arange(M_MIN, M_MAX + 2.0, 2.0)   # 2 GeV — mttbar plots
 BIN_EDGES_D     = np.arange(M_MIN, M_MAX + 5.0, 5.0)   # 5 GeV — D vs m plots
 
 M_THR_STEP   = 0.5
-M_THR_MIN    = 330.0
-M_THR_MAX    = 370.0
+M_THR_MIN    = 320.0
+M_THR_MAX    = 380.0
 BIN_EDGES_THR = np.arange(M_THR_MIN, M_THR_MAX + M_THR_STEP, M_THR_STEP)
-XLIM_THR     = (M_THR_MIN, M_THR_MAX)
+XLIM_THR     = (320.0, 380.0)
 
 
 def _make_D_curve(name: str, key: str,
@@ -726,7 +726,7 @@ def plot6_mttbar_nrc():
 
     plot_mttbar(BIN_EDGES_THR, curves, xlim=XLIM_THR,
                 ylim=(0, 0.5), ylabel=DSIGMA_YLABEL,
-                ratio_to=0, ratio_ylim=(0.5, 1.5),
+                ratio_to=0, ratio_ylim=(0.8, 2),
                 bands=bands, figsize=(8, 6),
                 output="plot6_mttbar_nrc")
 
@@ -807,7 +807,7 @@ def plot7_mttbar_toponium():
     ]
     plot_mttbar(BIN_EDGES_THR, curves, xlim=XLIM_THR,
                 ylim=(0, 0.5), ylabel=DSIGMA_YLABEL,
-                ratio_to=0, ratio_ylim=(0.5, 1.5),
+                ratio_to=0, ratio_ylim=(0.8, 2),
                 bands=bands, figsize=(8, 6), output="plot7_mttbar_toponium")
 
 
