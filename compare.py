@@ -90,6 +90,47 @@ SETUPS: dict[str, dict] = {
         "legend_label": "Ph hvq + Py8 (incl. NRC)",
         "color": "black",   "marker": "^", "solid": True,  "no_err": True,
     },
+    # ── MiNNLOps variant ───────────────────────────────────────────────────────
+    "mnn": {
+        "label":        r"Ph MiNNLOps + Py8",
+        "legend_label": "Ph MiNNLOps + Py8 (no NRC)",
+        "color": "#1f77b4", "marker": "o", "solid": False, "no_err": False,
+    },
+    "mnn_corr": {
+        "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.)",
+        "legend_label": "Ph MiNNLOps + gg+qq corr.",
+        "color": "#1f77b4", "marker": "o", "solid": True,  "no_err": False,
+    },
+    "mnn_fuks": {
+        "label":        r"Ph MiNNLOps + Py8 + $t\bar{t}_\mathrm{GFRW}$",
+        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$",
+        "color": "#d62728", "marker": "o", "solid": False, "no_err": False,
+    },
+    "mnn_fuks_ms": {
+        "label":        r"Ph MiNNLOps + Py8 + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
+        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
+        "color": "#ff7f0e", "marker": "o", "solid": False, "no_err": False,
+    },
+    "mnn_toy": {
+        "label":        r"Ph MiNNLOps + Py8 + $\eta_t$",
+        "legend_label": r"+ $\eta_t$",
+        "color": "#2ca02c", "marker": "o", "solid": False, "no_err": False,
+    },
+    "corr_mnn_fuks": {
+        "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.) + $t\bar{t}_\mathrm{GFRW}$",
+        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ [corr.]",
+        "color": "#d62728", "marker": "o", "solid": True,  "no_err": False,
+    },
+    "corr_mnn_fuks_ms": {
+        "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.) + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
+        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ $-$ singlet [corr.]",
+        "color": "#ff7f0e", "marker": "o", "solid": True,  "no_err": False,
+    },
+    "corr_mnn_toy": {
+        "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.) + $\eta_t$",
+        "legend_label": r"+ $\eta_t$ [corr.]",
+        "color": "#2ca02c", "marker": "o", "solid": True,  "no_err": False,
+    },
 }
 
 # Legend: one entry per configuration + two style indicators for hollow/solid circles.
@@ -97,6 +138,12 @@ SETUPS: dict[str, dict] = {
 LEGEND_CONFIG_KEYS = [
     "hvq",
     "hvq_fuks", "hvq_fuks_ms", "hvq_toy",
+    "nrc_nominal",
+]
+
+LEGEND_CONFIG_KEYS_MNN = [
+    "mnn",
+    "mnn_fuks", "mnn_fuks_ms", "mnn_toy",
     "nrc_nominal",
 ]
 
@@ -123,13 +170,35 @@ WITH_TOP_GROUPS = [
     ("nrc_nominal", None),
 ]
 
+ALL_GROUPS_MNN = [
+    ("mnn",        "mnn_corr"),
+    ("mnn_fuks",   "corr_mnn_fuks"),
+    ("mnn_fuks_ms","corr_mnn_fuks_ms"),
+    ("mnn_toy",    "corr_mnn_toy"),
+    ("nrc_nominal", None),
+]
+
+NO_TOP_GROUPS_MNN = [
+    ("mnn", "mnn_corr"),
+]
+
+WITH_TOP_GROUPS_MNN = [
+    ("mnn_fuks",   "corr_mnn_fuks"),
+    ("mnn_fuks_ms","corr_mnn_fuks_ms"),
+    ("mnn_toy",    "corr_mnn_toy"),
+    ("nrc_nominal", None),
+]
+
+PANEL_GROUPS_HVQ = [ALL_GROUPS, NO_TOP_GROUPS,     WITH_TOP_GROUPS,     ALL_GROUPS]
+PANEL_GROUPS_MNN = [ALL_GROUPS_MNN, NO_TOP_GROUPS_MNN, WITH_TOP_GROUPS_MNN, ALL_GROUPS_MNN]
+
 # ── Measurements ──────────────────────────────────────────────────────────────
 
 MEASUREMENTS = [
     {
         "D": -0.537, "err_hi": 0.019, "err_lo": 0.019,
         "m_lo": 340.0, "m_hi": 380.0, "bz_max": None,
-        "ref": "arXiv:2311.07288",
+        "ref": "ATLAS dilepton, arXiv:2311.07288",
         "sel_tex":   r"340 < $m_{t\bar{t}}$ < 380 GeV",
         "sel_plain": "340 < m_tt < 380 GeV",
         "groups": ALL_GROUPS,
@@ -137,7 +206,7 @@ MEASUREMENTS = [
     {
         "D": -0.491, "err_hi": 0.026, "err_lo": 0.025,
         "m_lo": 0.0, "m_hi": 400.0, "bz_max": 0.9,
-        "ref": "arXiv:2406.03976",
+        "ref": "CMS dilepton, arXiv:2406.03976",
         "sel_tex":   r"$m_{t\bar{t}}$ < 400 GeV,  $\beta_z$ < 0.9",
         "sel_plain": "m_tt < 400 GeV, beta_z < 0.9",
         "groups": NO_TOP_GROUPS,
@@ -145,7 +214,7 @@ MEASUREMENTS = [
     {
         "D": -0.480, "err_hi": 0.026, "err_lo": 0.029,
         "m_lo": 0.0, "m_hi": 400.0, "bz_max": 0.9,
-        "ref": "arXiv:2406.03976",
+        "ref": "CMS dilepton, arXiv:2406.03976",
         "sel_tex":   r"$m_{t\bar{t}}$ < 400 GeV,  $\beta_z$ < 0.9",
         "sel_plain": "m_tt < 400 GeV, beta_z < 0.9",
         "groups": WITH_TOP_GROUPS,
@@ -153,7 +222,7 @@ MEASUREMENTS = [
     {
         "D": -0.382, "err_hi": 0.030, "err_lo": 0.030,
         "m_lo": 300.0, "m_hi": 400.0, "bz_max": None,
-        "ref": "arXiv:2409.11067",
+        "ref": "CMS lepton+jets, arXiv:2409.11067",
         "sel_tex":   r"300 < $m_{t\bar{t}}$ < 400 GeV",
         "sel_plain": "300 < m_tt < 400 GeV",
         "groups": ALL_GROUPS,
@@ -175,11 +244,12 @@ def _panel_keys(meas: dict) -> set[str]:
 _CACHE: dict[str, pd.DataFrame] = {}
 
 _PATHS = {
-    "hvq":     DATA_DIR / "cache_hvq_afterFSR.parquet",
-    "nrc":     DATA_DIR / "cache_nrc_afterFSR.parquet",
-    "fuks":    DATA_DIR / "cache_toponium_Fuks_afterFSR.parquet",
-    "toy":     DATA_DIR / "cache_toponium_Toy_afterFSR.parquet",
-    "singlet": DATA_DIR / "cache_toponium_Singlet_afterFSR.parquet",
+    "hvq":      DATA_DIR / "cache_hvq_afterFSR.parquet",
+    "minnlops": DATA_DIR / "cache_minnlops_afterFSR.parquet",
+    "nrc":      DATA_DIR / "cache_nrc_afterFSR.parquet",
+    "fuks":     DATA_DIR / "cache_toponium_Fuks_afterFSR.parquet",
+    "toy":      DATA_DIR / "cache_toponium_Toy_afterFSR.parquet",
+    "singlet":  DATA_DIR / "cache_toponium_Singlet_afterFSR.parquet",
 }
 
 
@@ -226,21 +296,15 @@ def _D_combine(cos_list: list[np.ndarray], w_list: list[np.ndarray],
     return -3.0 * mean_cos, 3.0 * np.sqrt(max(wc2 / W**2, 0.0))
 
 
-def _corrected_hvq(m_lo: float, m_hi: float,
-                   bz_max: float | None) -> tuple[np.ndarray, np.ndarray]:
-    """
-    hvq sample, XS-normalised, with gg+qq correction applied below threshold:
-      gg events: cos → +1/3  (forces D = -1)
-      qq events: cos → -1/9  (forces D = +1/3)
-    Uses hvq because it carries PDFinfo channel flags.
-    """
-    df  = _load("hvq")
+def _corrected_sample(name: str, xs: float, m_lo: float, m_hi: float,
+                      bz_max: float | None) -> tuple[np.ndarray, np.ndarray]:
+    """XS-normalised sample with gg+qq correction below threshold (requires PDFinfo columns)."""
+    df  = _load(name)
     sel = _sel_mask(df, m_lo, m_hi, bz_max)
     m_s   = df[M_COL].to_numpy()[sel]
     cos_s = df[COS_COL].to_numpy()[sel].copy()
     w_all = df[W_NOM].to_numpy()
-    w_xs  = w_all[sel] / w_all.sum() * XS_HVQ
-
+    w_xs  = w_all[sel] / w_all.sum() * xs
     id1 = np.abs(df["PDFinfo_PDGID1"].to_numpy()[sel])
     id2 = np.abs(df["PDFinfo_PDGID2"].to_numpy()[sel])
     below = m_s < THRESHOLD
@@ -259,7 +323,7 @@ def compute_D(key: str, m_lo: float, m_hi: float,
         return _D_combine([cos], [w])
 
     elif key == "hvq_corr":
-        cos_c, w_c = _corrected_hvq(m_lo, m_hi, bz_max)
+        cos_c, w_c = _corrected_sample("hvq", XS_HVQ, m_lo, m_hi, bz_max)
         return _D_combine([cos_c], [w_c])
 
     elif key == "hvq_fuks":
@@ -294,21 +358,21 @@ def compute_D(key: str, m_lo: float, m_hi: float,
         )
 
     elif key == "corr_hvq_fuks":
-        cos_c, w_c = _corrected_hvq(m_lo, m_hi, bz_max)
+        cos_c, w_c = _corrected_sample("hvq", XS_HVQ, m_lo, m_hi, bz_max)
         df_fuks  = _load("fuks")
         sel_fuks = _sel_mask(df_fuks, m_lo, m_hi, bz_max)
         cos_fuks, w_fuks = _xs_arrays(df_fuks, W_NOM, XS_TOPONIUM, sel_fuks)
         return _D_combine([cos_c, cos_fuks], [w_c, w_fuks])
 
     elif key == "corr_hvq_toy":
-        cos_c, w_c = _corrected_hvq(m_lo, m_hi, bz_max)
+        cos_c, w_c = _corrected_sample("hvq", XS_HVQ, m_lo, m_hi, bz_max)
         df_toy  = _load("toy")
         sel_toy = _sel_mask(df_toy, m_lo, m_hi, bz_max)
         cos_toy, w_toy = _xs_arrays(df_toy, W_NOM, XS_TOPONIUM, sel_toy)
         return _D_combine([cos_c, cos_toy], [w_c, w_toy])
 
     elif key == "corr_hvq_fuks_ms":
-        cos_c, w_c = _corrected_hvq(m_lo, m_hi, bz_max)
+        cos_c, w_c = _corrected_sample("hvq", XS_HVQ, m_lo, m_hi, bz_max)
         df_fuks    = _load("fuks")
         df_singlet = _load("singlet")
         sel_fuks    = _sel_mask(df_fuks,    m_lo, m_hi, bz_max)
@@ -327,19 +391,83 @@ def compute_D(key: str, m_lo: float, m_hi: float,
         cos, w = _xs_arrays(df, W_NOM, XS_HVQ, sel)
         return _D_combine([cos], [w])
 
+    # ── MiNNLOps variant ───────────────────────────────────────────────────────
+    elif key == "mnn":
+        df  = _load("minnlops")
+        sel = _sel_mask(df, m_lo, m_hi, bz_max)
+        cos, w = _xs_arrays(df, W_NOM, XS_HVQ, sel)
+        return _D_combine([cos], [w])
+
+    elif key == "mnn_corr":
+        cos_c, w_c = _corrected_sample("minnlops", XS_HVQ, m_lo, m_hi, bz_max)
+        return _D_combine([cos_c], [w_c])
+
+    elif key == "mnn_fuks":
+        df_mnn  = _load("minnlops"); df_fuks = _load("fuks")
+        sel_mnn  = _sel_mask(df_mnn,  m_lo, m_hi, bz_max)
+        sel_fuks = _sel_mask(df_fuks, m_lo, m_hi, bz_max)
+        cos_mnn,  w_mnn  = _xs_arrays(df_mnn,  W_NOM, XS_HVQ,      sel_mnn)
+        cos_fuks, w_fuks = _xs_arrays(df_fuks, W_NOM, XS_TOPONIUM, sel_fuks)
+        return _D_combine([cos_mnn, cos_fuks], [w_mnn, w_fuks])
+
+    elif key == "mnn_toy":
+        df_mnn = _load("minnlops"); df_toy = _load("toy")
+        sel_mnn = _sel_mask(df_mnn, m_lo, m_hi, bz_max)
+        sel_toy = _sel_mask(df_toy, m_lo, m_hi, bz_max)
+        cos_mnn, w_mnn = _xs_arrays(df_mnn, W_NOM, XS_HVQ,      sel_mnn)
+        cos_toy, w_toy = _xs_arrays(df_toy, W_NOM, XS_TOPONIUM, sel_toy)
+        return _D_combine([cos_mnn, cos_toy], [w_mnn, w_toy])
+
+    elif key == "mnn_fuks_ms":
+        df_mnn = _load("minnlops"); df_fuks = _load("fuks"); df_singlet = _load("singlet")
+        sel_mnn     = _sel_mask(df_mnn,     m_lo, m_hi, bz_max)
+        sel_fuks    = _sel_mask(df_fuks,    m_lo, m_hi, bz_max)
+        sel_singlet = _sel_mask(df_singlet, m_lo, m_hi, bz_max)
+        cos_mnn,     w_mnn     = _xs_arrays(df_mnn,     W_NOM, XS_HVQ,      sel_mnn)
+        cos_fuks,    w_fuks    = _xs_arrays(df_fuks,    W_NOM, XS_TOPONIUM, sel_fuks)
+        cos_singlet, w_singlet = _xs_arrays(df_singlet, W_NOM, XS_SINGLET,  sel_singlet)
+        return _D_combine([cos_mnn, cos_fuks, cos_singlet],
+                          [w_mnn,   w_fuks,   w_singlet], signs=[1, 1, -1])
+
+    elif key == "corr_mnn_fuks":
+        cos_c, w_c = _corrected_sample("minnlops", XS_HVQ, m_lo, m_hi, bz_max)
+        df_fuks  = _load("fuks")
+        sel_fuks = _sel_mask(df_fuks, m_lo, m_hi, bz_max)
+        cos_fuks, w_fuks = _xs_arrays(df_fuks, W_NOM, XS_TOPONIUM, sel_fuks)
+        return _D_combine([cos_c, cos_fuks], [w_c, w_fuks])
+
+    elif key == "corr_mnn_toy":
+        cos_c, w_c = _corrected_sample("minnlops", XS_HVQ, m_lo, m_hi, bz_max)
+        df_toy  = _load("toy")
+        sel_toy = _sel_mask(df_toy, m_lo, m_hi, bz_max)
+        cos_toy, w_toy = _xs_arrays(df_toy, W_NOM, XS_TOPONIUM, sel_toy)
+        return _D_combine([cos_c, cos_toy], [w_c, w_toy])
+
+    elif key == "corr_mnn_fuks_ms":
+        cos_c, w_c = _corrected_sample("minnlops", XS_HVQ, m_lo, m_hi, bz_max)
+        df_fuks = _load("fuks"); df_singlet = _load("singlet")
+        sel_fuks    = _sel_mask(df_fuks,    m_lo, m_hi, bz_max)
+        sel_singlet = _sel_mask(df_singlet, m_lo, m_hi, bz_max)
+        cos_fuks,    w_fuks    = _xs_arrays(df_fuks,    W_NOM, XS_TOPONIUM, sel_fuks)
+        cos_singlet, w_singlet = _xs_arrays(df_singlet, W_NOM, XS_SINGLET,  sel_singlet)
+        return _D_combine([cos_c, cos_fuks, cos_singlet],
+                          [w_c,   w_fuks,   w_singlet], signs=[1, 1, -1])
+
     else:
         raise ValueError(f"Unknown key: {key!r}")
 
 
 # ── Terminal table ─────────────────────────────────────────────────────────────
 
-def print_table(results: dict) -> None:
+def print_table(results: dict, panel_groups: list | None = None) -> None:
+    if panel_groups is None:
+        panel_groups = [m["groups"] for m in MEASUREMENTS]
     for pi, meas in enumerate(MEASUREMENTS):
         print(f"\nPanel {pi + 1}:  {meas['ref']}   [{meas['sel_plain']}]")
         print(f"  {'Measurement':55s}  D = {meas['D']:+.3f}  "
               f"+{meas['err_hi']:.3f} / -{meas['err_lo']:.3f}")
         print(f"  {'─' * 75}")
-        for hollow_key, solid_key in meas["groups"]:
+        for hollow_key, solid_key in panel_groups[pi]:
             for k, style in [(hollow_key, "hollow"), (solid_key, "solid ")]:
                 if k is None:
                     continue
@@ -366,9 +494,16 @@ def _errorbar_kw(key: str) -> dict:
     )
 
 
-def make_plot(results: dict) -> None:
+def make_plot(results: dict,
+              panel_groups: list | None = None,
+              legend_config_keys: list | None = None,
+              outfile: str = "compare_D_measurements.pdf") -> None:
+    if panel_groups is None:
+        panel_groups = [m["groups"] for m in MEASUREMENTS]
+    if legend_config_keys is None:
+        legend_config_keys = LEGEND_CONFIG_KEYS
     n_panels = len(MEASUREMENTS)
-    n_shown  = [len(m["groups"]) for m in MEASUREMENTS]
+    n_shown  = [len(g) for g in panel_groups]
 
     fig = plt.figure(figsize=(10, 5.5))
     gs  = gridspec.GridSpec(
@@ -389,7 +524,7 @@ def make_plot(results: dict) -> None:
     yhi = max(all_D) + 0.08
 
     for pi, (ax, meas) in enumerate(zip(axes, MEASUREMENTS)):
-        groups = meas["groups"]
+        groups = panel_groups[pi]
         n      = len(groups)
 
         # Measurement band
@@ -447,8 +582,8 @@ def make_plot(results: dict) -> None:
                       mfc=s["color"] if s["solid"] else "none",
                       mew=1.5, lw=0, ls="")
 
-    leg_handles = [_proxy(k) for k in LEGEND_CONFIG_KEYS]
-    leg_labels  = [SETUPS[k]["legend_label"] for k in LEGEND_CONFIG_KEYS]
+    leg_handles = [_proxy(k) for k in legend_config_keys]
+    leg_labels  = [SETUPS[k]["legend_label"] for k in legend_config_keys]
 
     # Style indicators: hollow circle = uncorrected, solid circle = gg+qq corrected
     leg_handles += [
@@ -511,7 +646,7 @@ def make_plot(results: dict) -> None:
 
     # ── Save ──────────────────────────────────────────────────────────────────
     OUT_DIR.mkdir(exist_ok=True)
-    out = OUT_DIR / "compare_D_measurements.pdf"
+    out = OUT_DIR / outfile
     fig.savefig(out, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"  → {out}")
@@ -519,19 +654,39 @@ def make_plot(results: dict) -> None:
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 
+def _compute_for_variant(panel_groups: list) -> dict:
+    results: dict[tuple[int, str], tuple[float, float]] = {}
+    for pi, (meas, groups) in enumerate(zip(MEASUREMENTS, panel_groups)):
+        seen: set[str] = set()
+        for hollow_key, solid_key in groups:
+            for key in (hollow_key, solid_key):
+                if key is None or key in seen:
+                    continue
+                seen.add(key)
+                results[(pi, key)] = compute_D(key, meas["m_lo"], meas["m_hi"], meas["bz_max"])
+    return results
+
+
 def main() -> None:
     print("Loading data …")
-    for name in ["hvq", "nrc", "fuks", "toy", "singlet"]:
+    for name in ["hvq", "minnlops", "nrc", "fuks", "toy", "singlet"]:
         _load(name)
 
-    print("Computing integrated D …")
-    results: dict[tuple[int, str], tuple[float, float]] = {}
-    for pi, meas in enumerate(MEASUREMENTS):
-        for key in _panel_keys(meas):
-            results[(pi, key)] = compute_D(key, meas["m_lo"], meas["m_hi"], meas["bz_max"])
+    print("\n── Ph hvq variant ────────────────────────────────────────────────────────")
+    results_hvq = _compute_for_variant(PANEL_GROUPS_HVQ)
+    print_table(results_hvq, PANEL_GROUPS_HVQ)
+    make_plot(results_hvq,
+              panel_groups=PANEL_GROUPS_HVQ,
+              legend_config_keys=LEGEND_CONFIG_KEYS,
+              outfile="compare_D_measurements.pdf")
 
-    print_table(results)
-    make_plot(results)
+    print("\n── Ph MiNNLOps variant ───────────────────────────────────────────────────")
+    results_mnn = _compute_for_variant(PANEL_GROUPS_MNN)
+    print_table(results_mnn, PANEL_GROUPS_MNN)
+    make_plot(results_mnn,
+              panel_groups=PANEL_GROUPS_MNN,
+              legend_config_keys=LEGEND_CONFIG_KEYS_MNN,
+              outfile="compare_D_measurements_minnlops.pdf")
 
 
 if __name__ == "__main__":
