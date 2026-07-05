@@ -58,32 +58,32 @@ SETUPS: dict[str, dict] = {
     },
     "hvq_fuks": {
         "label":        r"Ph hvq + Py8 + $t\bar{t}_\mathrm{GFRW}$",
-        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$",
+        "legend_label": r"... + $t\bar{t}_\mathrm{GFRW}$",
         "color": "#d62728", "marker": "o", "solid": False, "no_err": False,
     },
     "hvq_fuks_ms": {
         "label":        r"Ph hvq + Py8 + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
-        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
+        "legend_label": r"... + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
         "color": "#ff7f0e", "marker": "o", "solid": False, "no_err": False,
     },
     "hvq_toy": {
         "label":        r"Ph hvq + Py8 + $\eta_t$",
-        "legend_label": r"+ $\eta_t$",
+        "legend_label": r"... + $\eta_t$",
         "color": "#2ca02c", "marker": "o", "solid": False, "no_err": False,
     },
     "corr_hvq_fuks": {
         "label":        r"Ph hvq + Py8 (gg+qq corr.) + $t\bar{t}_\mathrm{GFRW}$",
-        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ [corr.]",
+        "legend_label": r"... + $t\bar{t}_\mathrm{GFRW}$ [corr.]",
         "color": "#d62728", "marker": "o", "solid": True,  "no_err": False,
     },
     "corr_hvq_fuks_ms": {
         "label":        r"Ph hvq + Py8 (gg+qq corr.) + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
-        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ $-$ singlet [corr.]",
+        "legend_label": r"... + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet [corr.]",
         "color": "#ff7f0e", "marker": "o", "solid": True,  "no_err": False,
     },
     "corr_hvq_toy": {
         "label":        r"Ph hvq + Py8 (gg+qq corr.) + $\eta_t$",
-        "legend_label": r"+ $\eta_t$ [corr.]",
+        "legend_label": r"... + $\eta_t$ [corr.]",
         "color": "#2ca02c", "marker": "o", "solid": True,  "no_err": False,
     },
     "nrc_nominal": {
@@ -104,32 +104,32 @@ SETUPS: dict[str, dict] = {
     },
     "mnn_fuks": {
         "label":        r"Ph MiNNLOps + Py8 + $t\bar{t}_\mathrm{GFRW}$",
-        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$",
+        "legend_label": r"... + $t\bar{t}_\mathrm{GFRW}$",
         "color": "#d62728", "marker": "s", "solid": False, "no_err": False,
     },
     "mnn_fuks_ms": {
         "label":        r"Ph MiNNLOps + Py8 + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
-        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
+        "legend_label": r"... + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
         "color": "#ff7f0e", "marker": "s", "solid": False, "no_err": False,
     },
     "mnn_toy": {
         "label":        r"Ph MiNNLOps + Py8 + $\eta_t$",
-        "legend_label": r"+ $\eta_t$",
+        "legend_label": r"... + $\eta_t$",
         "color": "#2ca02c", "marker": "s", "solid": False, "no_err": False,
     },
     "corr_mnn_fuks": {
         "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.) + $t\bar{t}_\mathrm{GFRW}$",
-        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ [corr.]",
+        "legend_label": r"... + $t\bar{t}_\mathrm{GFRW}$ [corr.]",
         "color": "#d62728", "marker": "s", "solid": True,  "no_err": False,
     },
     "corr_mnn_fuks_ms": {
         "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.) + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
-        "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ $-$ singlet [corr.]",
+        "legend_label": r"... + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet [corr.]",
         "color": "#ff7f0e", "marker": "s", "solid": True,  "no_err": False,
     },
     "corr_mnn_toy": {
         "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.) + $\eta_t$",
-        "legend_label": r"+ $\eta_t$ [corr.]",
+        "legend_label": r"... + $\eta_t$ [corr.]",
         "color": "#2ca02c", "marker": "s", "solid": True,  "no_err": False,
     },
 }

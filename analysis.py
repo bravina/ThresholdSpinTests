@@ -12,6 +12,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import AutoMinorLocator
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from pathlib import Path
 from matplotlib.transforms import blended_transform_factory
 
@@ -60,9 +62,9 @@ LABEL = {
     "nrc_i0_toy":                r"Ph hvq + Py8 (no NRC) + $\eta_t$",
     "nrc_i0_fuks_minus_singlet": r"Ph hvq + Py8 (no NRC) + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
     "coulomb":                   r"Coulomb scale variation",
-    "gg":                        r"$gg$",
-    "qq":                        r"$q\bar{q}$",
-    "qg":                        r"$qg$",
+    "gg":                        r"$gg\to t\bar{t}$",
+    "qq":                        r"$q\bar{q}\to t\bar{t}$",
+    "qg":                        r"$qg\to t\bar{t}$",
     "no_corr":                   r"No correction",
     "gg_corr":                   r"$gg$: $D{=}{-1}$ below 345 GeV",
     "gg_qq_corr":                r"$gg$: $D{=}{-1}$,  $q\bar{q}$: $D{=}{+1/3}$ below 345 GeV",
@@ -323,7 +325,9 @@ def _style_main(ax: plt.Axes, xlabel: str, ylabel: str,
                 D_lines: bool = False,
                 show_xlabel: bool = True,
                 legend_loc: str = "upper right",
-                legend_bbox: tuple = (0.97, 0.91)) -> None:
+                legend_bbox: tuple = (0.97, 0.91),
+                legend_handles: list | None = None,
+                legend_labels: list | None = None) -> None:
     if threshold:
         _thresh_line(ax)
     if D_lines:
@@ -337,8 +341,12 @@ def _style_main(ax: plt.Axes, xlabel: str, ylabel: str,
         ax.set_ylim(*ylim)
     ax.xaxis.set_minor_locator(AutoMinorLocator())
     ax.tick_params(axis="x", which="minor", length=4)
-    ax.legend(fontsize=11, loc=legend_loc,
-              bbox_to_anchor=legend_bbox, borderaxespad=0)
+    if legend_handles is not None:
+        ax.legend(legend_handles, legend_labels, fontsize=11, loc=legend_loc,
+                  bbox_to_anchor=legend_bbox, borderaxespad=0)
+    else:
+        ax.legend(fontsize=11, loc=legend_loc,
+                  bbox_to_anchor=legend_bbox, borderaxespad=0)
     _spin_label(ax)
 
 
@@ -417,7 +425,7 @@ def _draw_errorbars(ax: plt.Axes, bin_edges: np.ndarray,
                     color=c["color"], label=c["label"],
                     marker=c.get("marker", "o"),
                     ms=c.get("ms", 3.5),
-                    ls="none", capsize=2, rasterized=True)
+                    ls=c.get("ls", "none"), capsize=2, rasterized=True)
 
 
 def _ratio_errors(vals, errs, ref_vals, ref_errs):
@@ -482,6 +490,8 @@ def plot_mttbar(bin_edges: np.ndarray, curves: list[dict],
                 log_y: bool = False,
                 legend_loc: str = "upper right",
                 legend_bbox: tuple = (0.97, 0.91),
+                legend_handles: list | None = None,
+                legend_labels: list | None = None,
                 output: str | None = None) -> None:
     """
     Plot normalised m(ttbar) step histograms.
@@ -506,7 +516,8 @@ def plot_mttbar(bin_edges: np.ndarray, curves: list[dict],
         axm.set_yscale("log")
     _style_main(axm, MTTBAR_XLABEL, ylabel, xlim, ylim,
                 show_xlabel=not has_ratio,
-                legend_loc=legend_loc, legend_bbox=legend_bbox)
+                legend_loc=legend_loc, legend_bbox=legend_bbox,
+                legend_handles=legend_handles, legend_labels=legend_labels)
 
     if has_ratio:
         if bands:
@@ -609,7 +620,7 @@ def plot1_mttbar_generators():
         curves.append({"vals": v, "errs": e, "label": LABEL[key], "color": COLOR[key]})
 
     plot_mttbar(BIN_EDGES_M, curves, xlim=XLIM_FULL,
-                ylim=(1e-6, 1e0), figsize=(8, 5), log_y=True,
+                ylim=(1e-6, 2e0), figsize=(8, 5), log_y=True,
                 output="plot1_mttbar_generators")
 
 
@@ -618,7 +629,7 @@ def plot1_mttbar_generators():
 def plot2_D_generators():
     print("Plot 2: D — generators")
     curves = [
-        _make_D_curve("hvq",      "hvq"),
+        {**_make_D_curve("hvq", "hvq"), "ls": "-"},
         _make_D_curve("minnlops", "minnlops"),
         _make_D_curve("madspin",  "madspin"),
         _make_D_curve("amcatnlo", "amcatnlo"),
@@ -675,7 +686,8 @@ def plot3_D_channels():
             label = f"{LABEL[key]}: {pct:.1f}%"
             ax.errorbar(x, vals, yerr=errs,
                         color=COLOR[key], label=label,
-                        marker="o", ms=3.5, ls="none",
+                        marker="o", ms=3.5,
+                        ls="-" if name == "hvq" else "none",
                         capsize=2, rasterized=True)
 
         _thresh_line(ax, y_text=THRESH_Y_TEXT[ch])
@@ -722,15 +734,19 @@ def _hvq_channel_stats(bin_edges: np.ndarray) -> dict:
 def plot4_D_corrections_diff():
     print("Plot 4: D corrections (differential)")
     ch_stats = _hvq_channel_stats(BIN_EDGES_D)
-    # no_corr drawn last so it overlays the others above the threshold
     corr_specs = [
+        (None,                    "no_corr"),
         ({"gg": -1.0},            "gg_corr"),
         ({"gg": -1.0, "qq": 1/3}, "gg_qq_corr"),
-        (None,                    "no_corr"),
     ]
+    cen = 0.5 * (BIN_EDGES_D[:-1] + BIN_EDGES_D[1:])
+    above = cen >= THRESHOLD
     curves = []
     for corrections, key in corr_specs:
         vals, errs = apply_corrections(ch_stats, BIN_EDGES_D, corrections)
+        if corrections is not None:
+            vals = np.where(above, np.nan, vals)
+            errs = np.where(above, np.nan, errs)
         curves.append({"vals": vals, "errs": errs,
                        "label": LABEL[key], "color": COLOR[key]})
 
@@ -882,11 +898,34 @@ def plot7_mttbar_toponium():
         {"vals": v_fuks_ms, "errs": e_fuks_ms,  "label": LABEL["nrc_i0_fuks_minus_singlet"], "color": COLOR["nrc_i0_fuks_minus_singlet"]},
         {"vals": v_toy,     "errs": e_toy,      "label": LABEL["nrc_i0_toy"],                "color": COLOR["nrc_i0_toy"]},
     ]
+
+    _lw = dict(lw=1.8)
+    _blank = Line2D([], [], lw=0, ms=0)
+    leg_handles = [
+        Patch(facecolor="gray", alpha=0.35),
+        Line2D([0], [0], color=COLOR["nrc_nominal"], **_lw),
+        _blank,
+        Line2D([0], [0], color=COLOR["nrc_i0"],                    **_lw),
+        Line2D([0], [0], color=COLOR["nrc_i0_fuks"],               **_lw),
+        Line2D([0], [0], color=COLOR["nrc_i0_fuks_minus_singlet"], **_lw),
+        Line2D([0], [0], color=COLOR["nrc_i0_toy"],                **_lw),
+    ]
+    leg_labels = [
+        LABEL["coulomb"],
+        LABEL["nrc_nominal"],
+        " ",
+        LABEL["nrc_i0"],
+        r"... + $t\bar{t}_\mathrm{GFRW}$",
+        r"... + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
+        r"... + $\eta_t$",
+    ]
+
     plot_mttbar(BIN_EDGES_THR, curves, xlim=XLIM_THR,
                 ylim=(0, 0.5), ylabel=DSIGMA_YLABEL,
                 ratio_to=0, ratio_ylim=(0.8, 3.5),
                 bands=bands, figsize=(8, 6),
                 legend_loc="upper left", legend_bbox=(0.03, 0.91),
+                legend_handles=leg_handles, legend_labels=leg_labels,
                 output="plot7_mttbar_toponium")
 
 
@@ -941,14 +980,14 @@ def main():
         _load(name)
 
     print("\nGenerating plots …")
-    plot1_mttbar_generators()
-    plot2_D_generators()
-    plot3_D_channels()
-    plot4_D_corrections_diff()
-    plot5_D_corrections_cum()
-    plot6_mttbar_nrc()
-    plot7_mttbar_toponium()
-    plot8_D_toponium()
+   plot1_mttbar_generators()
+   plot2_D_generators()
+   plot3_D_channels()
+   plot4_D_corrections_diff()
+   plot5_D_corrections_cum()
+   plot6_mttbar_nrc()
+   plot7_mttbar_toponium()
+   plot8_D_toponium()
 
     print("\nDone.")
 
