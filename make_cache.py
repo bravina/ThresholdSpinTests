@@ -159,6 +159,14 @@ SAMPLES: dict[str, dict] = {
         "extra_branches": [],
         "nrc_weights": True,
     },
+    "sherpa": {
+        "input_dir": (
+            "user.ravinab.700660.Sh.DAOD_PHYSLITE.e8461_s3681_r13144_p7266.ThresholdSpinTestFinalV1_output"
+        ),
+        "cache": DATA_DIR / "cache_sherpa_afterFSR.parquet",
+        "extra_branches": ["PDFinfo_PDGID1", "PDFinfo_PDGID2"],
+        "nrc_weights": False,
+    },
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
