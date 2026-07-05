@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from matplotlib.ticker import AutoMinorLocator
 from pathlib import Path
 from matplotlib.transforms import blended_transform_factory
 
@@ -19,7 +20,7 @@ matplotlib.rcParams.update({
     "axes.labelsize":    14,
     "xtick.labelsize":   12,
     "ytick.labelsize":   12,
-    "legend.fontsize":   12,
+    "legend.fontsize":   11,
     "legend.frameon":    False,
 })
 
@@ -40,44 +41,51 @@ THRESHOLD = 345.0   # GeV
 
 # Physical cross sections [pb] — used to set relative normalisation when
 # combining the continuum (NRCi0) with the toponium signal samples.
-XS_HVQ      = 87.87    # Powheg hvq total xs
+XS_HVQ      = 87.87    # Ph hvq total xs
 XS_TOPONIUM = 0.675    # Fuks and Toy toponium xs (identical for both)
+XS_SINGLET  = 0.07     # Toponium singlet xs
 
 LABEL = {
-    "hvq":         r"Powheg hvq + Pythia 8",
-    "amcatnlo":    r"aMC@NLO + Pythia 8",
-    "madgraph":    r"MadGraph (parton-level)",
-    "nrc_nominal": r"Powheg hvq + Pythia 8 (incl. NRC)",
-    "nrc_i0":      r"Powheg hvq + Pythia 8 (no NRC)",
-    "fuks":        r"$t\bar{t}_\mathrm{GFRW}$",
-    "toy":         r"$\eta_t$",
-    "nrc_i0_fuks": r"Powheg hvq + Pythia 8 (no NRC) + $t\bar{t}_\mathrm{GFRW}$",
-    "nrc_i0_toy":  r"Powheg hvq + Pythia 8 (no NRC) + $\eta_t$",
-    "coulomb":     r"Coulomb scale variation",
-    "gg":          r"$gg$",
-    "qq":          r"$q\bar{q}$",
-    "qg":          r"$qg$",
-    "no_corr":     r"No correction",
-    "gg_corr":     r"$gg$: $D{=}{-1}$ below 345 GeV",
-    "gg_qq_corr":  r"$gg$: $D{=}{-1}$,  $q\bar{q}$: $D{=}{+1/3}$ below 345 GeV",
+    "hvq":                       r"Ph hvq + Py8",
+    "madspin":                   r"Ph hvq + MadSpin + Py8",
+    "amcatnlo":                  r"aMC@NLO + Py8",
+    "madgraph":                  r"MadGraph (parton-level)",
+    "sherpa":                    r"Sherpa 2.2.12",
+    "nrc_nominal":               r"Ph hvq + Py8 (incl. NRC)",
+    "nrc_i0":                    r"Ph hvq + Py8 (no NRC)",
+    "fuks":                      r"$t\bar{t}_\mathrm{GFRW}$",
+    "toy":                       r"$\eta_t$",
+    "nrc_i0_fuks":               r"Ph hvq + Py8 (no NRC) + $t\bar{t}_\mathrm{GFRW}$",
+    "nrc_i0_toy":                r"Ph hvq + Py8 (no NRC) + $\eta_t$",
+    "nrc_i0_fuks_minus_singlet": r"Ph hvq + Py8 (no NRC) + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
+    "coulomb":                   r"Coulomb scale variation",
+    "gg":                        r"$gg$",
+    "qq":                        r"$q\bar{q}$",
+    "qg":                        r"$qg$",
+    "no_corr":                   r"No correction",
+    "gg_corr":                   r"$gg$: $D{=}{-1}$ below 345 GeV",
+    "gg_qq_corr":                r"$gg$: $D{=}{-1}$,  $q\bar{q}$: $D{=}{+1/3}$ below 345 GeV",
 }
 
 COLOR = {
-    "hvq":         "#1f77b4",
-    "amcatnlo":    "#d62728",
-    "madgraph":    "#2ca02c",
-    "nrc_nominal": "black",
-    "nrc_i0":      "#1f77b4",
-    "fuks":        "#d62728",
-    "toy":         "#2ca02c",
-    "nrc_i0_fuks": "#d62728",
-    "nrc_i0_toy":  "#2ca02c",
-    "gg":          "#d62728",
-    "qq":          "#1f77b4",
-    "qg":          "#2ca02c",
-    "no_corr":     "black",
-    "gg_corr":     "#d62728",
-    "gg_qq_corr":  "#1f77b4",
+    "hvq":                       "#1f77b4",
+    "madspin":                   "#ff7f0e",
+    "amcatnlo":                  "#d62728",
+    "madgraph":                  "#2ca02c",
+    "sherpa":                    "#9467bd",
+    "nrc_nominal":               "black",
+    "nrc_i0":                    "#1f77b4",
+    "fuks":                      "#d62728",
+    "toy":                       "#2ca02c",
+    "nrc_i0_fuks":               "#d62728",
+    "nrc_i0_toy":                "#2ca02c",
+    "nrc_i0_fuks_minus_singlet": "#ff7f0e",
+    "gg":                        "#d62728",
+    "qq":                        "#1f77b4",
+    "qg":                        "#2ca02c",
+    "no_corr":                   "black",
+    "gg_corr":                   "#d62728",
+    "gg_qq_corr":                "#1f77b4",
 }
 
 MTTBAR_XLABEL  = r"$m(t\bar{t})$ [GeV]"
@@ -93,11 +101,14 @@ _CACHE: dict[str, pd.DataFrame] = {}
 
 _PATHS = {
     "hvq":      DATA_DIR / "cache_hvq_afterFSR.parquet",
+    "madspin":  DATA_DIR / "cache_madspin_afterFSR.parquet",
     "amcatnlo": DATA_DIR / "cache_amcatnlo_afterFSR.parquet",
+    "madgraph": DATA_DIR / "cache_MadGraph_LO_lhe.parquet",
+    "sherpa":   DATA_DIR / "cache_sherpa_afterFSR.parquet",
     "nrc":      DATA_DIR / "cache_nrc_afterFSR.parquet",
     "fuks":     DATA_DIR / "cache_toponium_Fuks_afterFSR.parquet",
     "toy":      DATA_DIR / "cache_toponium_Toy_afterFSR.parquet",
-    "madgraph": DATA_DIR / "cache_MadGraph_LO_lhe.parquet",
+    "singlet":  DATA_DIR / "cache_toponium_Singlet_afterFSR.parquet",
 }
 
 
@@ -196,6 +207,25 @@ def scale_stats(s: dict, factor: float) -> dict:
     return {k: (s[k] * factor if k != "empty" else s[k]) for k in s}
 
 
+def subtract_stats(s_base: dict, s_sub: dict) -> dict:
+    """
+    Subtract s_sub from s_base.
+
+    w and wc subtract (net contribution); variance terms (wc2, w2, w2c2) add
+    because the two samples are statistically independent and their uncertainties
+    combine in quadrature regardless of sign.
+    """
+    out = {
+        "w":    s_base["w"]    - s_sub["w"],
+        "wc":   s_base["wc"]   - s_sub["wc"],
+        "wc2":  s_base["wc2"]  + s_sub["wc2"],
+        "w2":   s_base["w2"]   + s_sub["w2"],
+        "w2c2": s_base["w2c2"] + s_sub["w2c2"],
+    }
+    out["empty"] = out["w"] == 0
+    return out
+
+
 def D_diff(s: dict) -> tuple[np.ndarray, np.ndarray]:
     with np.errstate(invalid="ignore", divide="ignore"):
         mean = np.where(s["empty"], np.nan, s["wc"] / s["w"])
@@ -288,7 +318,9 @@ def _style_main(ax: plt.Axes, xlabel: str, ylabel: str,
                 xlim: tuple, ylim: tuple | None = None,
                 threshold: bool = True,
                 D_lines: bool = False,
-                show_xlabel: bool = True) -> None:
+                show_xlabel: bool = True,
+                legend_loc: str = "upper right",
+                legend_bbox: tuple = (0.97, 0.91)) -> None:
     if threshold:
         _thresh_line(ax)
     if D_lines:
@@ -300,9 +332,10 @@ def _style_main(ax: plt.Axes, xlabel: str, ylabel: str,
     ax.set_xlim(*xlim)
     if ylim is not None:
         ax.set_ylim(*ylim)
-    # Legend in upper right; bbox_to_anchor leaves space for the spin label above
-    ax.legend(fontsize=12, loc="upper right",
-              bbox_to_anchor=(0.97, 0.91), borderaxespad=0)
+    ax.xaxis.set_minor_locator(AutoMinorLocator())
+    ax.tick_params(axis="x", which="minor", length=4)
+    ax.legend(fontsize=11, loc=legend_loc,
+              bbox_to_anchor=legend_bbox, borderaxespad=0)
     _spin_label(ax)
 
 
@@ -326,7 +359,9 @@ def _style_ratio(axr: plt.Axes, xlabel: str, xlim: tuple,
     axr.set_ylabel(ylabel, fontsize=12)
     axr.set_xlim(*xlim)
     axr.set_ylim(*ylim)
+    axr.xaxis.set_minor_locator(AutoMinorLocator())
     axr.tick_params(labelsize=11)
+    axr.tick_params(axis="x", which="minor", length=4)
 
 
 def _save(fig: plt.Figure, name: str) -> None:
@@ -442,6 +477,8 @@ def plot_mttbar(bin_edges: np.ndarray, curves: list[dict],
                 bands: list[dict] | None = None,
                 figsize: tuple = (8, 5),
                 log_y: bool = False,
+                legend_loc: str = "upper right",
+                legend_bbox: tuple = (0.97, 0.91),
                 output: str | None = None) -> None:
     """
     Plot normalised m(ttbar) step histograms.
@@ -465,7 +502,8 @@ def plot_mttbar(bin_edges: np.ndarray, curves: list[dict],
     if log_y:
         axm.set_yscale("log")
     _style_main(axm, MTTBAR_XLABEL, ylabel, xlim, ylim,
-                show_xlabel=not has_ratio)
+                show_xlabel=not has_ratio,
+                legend_loc=legend_loc, legend_bbox=legend_bbox)
 
     if has_ratio:
         if bands:
@@ -555,7 +593,12 @@ def _make_D_curve(name: str, key: str,
 def plot1_mttbar_generators():
     print("Plot 1: m(ttbar) — generators")
     curves = []
-    for name, key in [("hvq", "hvq"), ("amcatnlo", "amcatnlo"), ("madgraph", "madgraph")]:
+    for name, key in [
+        ("hvq",      "hvq"),
+        ("madspin",  "madspin"),
+        ("amcatnlo", "amcatnlo"),
+        ("madgraph", "madgraph"),
+    ]:
         m, w = _mw(name)
         v, e = weighted_hist(m, w, BIN_EDGES_M)
         curves.append({"vals": v, "errs": e, "label": LABEL[key], "color": COLOR[key]})
@@ -571,6 +614,7 @@ def plot2_D_generators():
     print("Plot 2: D — generators")
     curves = [
         _make_D_curve("hvq",      "hvq"),
+        _make_D_curve("madspin",  "madspin"),
         _make_D_curve("amcatnlo", "amcatnlo"),
         _make_D_curve("madgraph", "madgraph"),
     ]
@@ -588,6 +632,7 @@ def plot3_D_channels():
     channels  = ["gg", "qq", "qg"]
     gen_specs = [
         ("hvq",      "hvq",      "-"),
+        ("madspin",  "madspin",  "-."),
         ("amcatnlo", "amcatnlo", "--"),
         ("madgraph", "madgraph", ":"),
     ]
@@ -611,6 +656,12 @@ def plot3_D_channels():
             m_ch, cos_ch, w_ch = m[masks[ch]], cos[masks[ch]], w[masks[ch]]
             s = norm_stats(m_ch, cos_ch, w_ch, BIN_EDGES_D)
             vals, errs = D_diff(s)
+            # Mask bins with fewer than 2 effective events: single-event bins have
+            # wc2=0 by construction (one point equals its own mean), and bins with
+            # net-negative weight from NLO cancellations give |D|>1.
+            n_eff = np.where(s["w2"] > 0, s["w"]**2 / s["w2"], 0.0)
+            vals  = np.where(n_eff < 2, np.nan, vals)
+            errs  = np.where(n_eff < 2, np.nan, errs)
             pct = fracs[name][ch] * 100
             label = f"{LABEL[key]}: {pct:.1f}%"
             ax.errorbar(x, vals, yerr=errs,
@@ -621,13 +672,22 @@ def plot3_D_channels():
         _thresh_line(ax, y_text=THRESH_Y_TEXT[ch])
         ax.axhline(0,  color="k",    lw=0.7, ls=":",  zorder=0)
         ax.axhline(-1, color="gray", lw=0.7, ls="--", alpha=0.5, zorder=0)
+        if ch == "qq":
+            ax.axhline(1/3, color="gray", lw=0.7, ls="--", alpha=0.5, zorder=0)
+            trans = blended_transform_factory(ax.transAxes, ax.transData)
+            ax.text(-0.01, 1/3, r"$+1/3$", transform=trans,
+                    ha="right", va="center", fontsize=11, color="gray", clip_on=False)
         ax.set_title(LABEL[ch], fontsize=13)
         ax.set_xlabel(MTTBAR_XLABEL, fontsize=14)
         ax.set_xlim(*XLIM_FULL)
         ax.set_ylim(-1.0, 1.0)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
         ax.tick_params(labelsize=12)
-        ax.legend(fontsize=11, loc="upper right",
-                  bbox_to_anchor=(0.97, 0.91), borderaxespad=0)
+        ax.tick_params(axis="x", which="minor", length=4)
+        legend_loc  = "lower right" if ch == "qq" else "upper right"
+        legend_bbox = (0.97, 0.09)  if ch == "qq" else (0.97, 0.91)
+        ax.legend(fontsize=10, loc=legend_loc,
+                  bbox_to_anchor=legend_bbox, borderaxespad=0)
         _spin_label(ax)
 
     axes[0].set_ylabel(D_YLABEL, fontsize=14)
@@ -726,8 +786,9 @@ def plot6_mttbar_nrc():
 
     plot_mttbar(BIN_EDGES_THR, curves, xlim=XLIM_THR,
                 ylim=(0, 0.5), ylabel=DSIGMA_YLABEL,
-                ratio_to=0, ratio_ylim=(0.8, 2),
+                ratio_to=0, ratio_ylim=(0.8, 3.5),
                 bands=bands, figsize=(8, 6),
+                legend_loc="upper left", legend_bbox=(0.03, 0.91),
                 output="plot6_mttbar_nrc")
 
 
@@ -776,8 +837,9 @@ def plot7_mttbar_toponium():
     w_cl_lo = df_nrc[W_CL_LO].to_numpy()
     w_cl_hi = df_nrc[W_CL_HI].to_numpy()
 
-    m_fuks, w_fuks = _mw("fuks")
-    m_toy,  w_toy  = _mw("toy")
+    m_fuks, w_fuks       = _mw("fuks")
+    m_toy,  w_toy        = _mw("toy")
+    m_singlet, w_singlet = _mw("singlet")
 
     # Shared norm: dσ/dm [pb/GeV] for all NRC-file weights (same as plot 6)
     scale = w_i0.sum() / XS_HVQ
@@ -787,28 +849,36 @@ def plot7_mttbar_toponium():
     v_cl_lo, _     = weighted_hist(m_nrc, w_cl_lo, BIN_EDGES_THR, norm=scale)
     v_cl_hi, _     = weighted_hist(m_nrc, w_cl_hi, BIN_EDGES_THR, norm=scale)
 
-    # Toponium: add absolute NRCi0 spectrum + absolute signal spectrum
+    # Toponium combinations: NRCi0 + signal
     v_fuks, e_fuks = _xs_combined_hist_abs(m_nrc, w_i0, XS_HVQ,
                                             m_fuks, w_fuks, XS_TOPONIUM, BIN_EDGES_THR)
     v_toy,  e_toy  = _xs_combined_hist_abs(m_nrc, w_i0, XS_HVQ,
                                             m_toy,  w_toy,  XS_TOPONIUM, BIN_EDGES_THR)
+
+    # NRCi0 + GFRW − singlet: subtract the absolute singlet spectrum
+    h_singlet, e_singlet = weighted_hist(m_singlet, w_singlet, BIN_EDGES_THR)
+    v_fuks_ms = v_fuks - XS_SINGLET * h_singlet
+    e_fuks_ms = np.sqrt(e_fuks**2 + (XS_SINGLET * e_singlet)**2)
 
     lo_env = np.minimum(v_cl_lo, v_cl_hi)
     hi_env = np.maximum(v_cl_lo, v_cl_hi)
     bands  = [{"lo": lo_env, "hi": hi_env,
                "label": LABEL["coulomb"], "color": "gray", "alpha": 0.35}]
 
-    # NRCi0 (blue) is first and is the ratio reference
+    # NRCi0 (blue) is first and is the ratio reference; GFRW and GFRW−singlet adjacent
     curves = [
-        {"vals": v_i0,  "errs": e_i0,  "label": LABEL["nrc_i0"],      "color": COLOR["nrc_i0"]},
-        {"vals": v_nom, "errs": e_nom,  "label": LABEL["nrc_nominal"], "color": COLOR["nrc_nominal"]},
-        {"vals": v_fuks, "errs": e_fuks, "label": LABEL["nrc_i0_fuks"], "color": COLOR["nrc_i0_fuks"]},
-        {"vals": v_toy,  "errs": e_toy,  "label": LABEL["nrc_i0_toy"],  "color": COLOR["nrc_i0_toy"]},
+        {"vals": v_i0,      "errs": e_i0,      "label": LABEL["nrc_i0"],                    "color": COLOR["nrc_i0"]},
+        {"vals": v_nom,     "errs": e_nom,      "label": LABEL["nrc_nominal"],               "color": COLOR["nrc_nominal"]},
+        {"vals": v_fuks,    "errs": e_fuks,     "label": LABEL["nrc_i0_fuks"],               "color": COLOR["nrc_i0_fuks"]},
+        {"vals": v_fuks_ms, "errs": e_fuks_ms,  "label": LABEL["nrc_i0_fuks_minus_singlet"], "color": COLOR["nrc_i0_fuks_minus_singlet"]},
+        {"vals": v_toy,     "errs": e_toy,      "label": LABEL["nrc_i0_toy"],                "color": COLOR["nrc_i0_toy"]},
     ]
     plot_mttbar(BIN_EDGES_THR, curves, xlim=XLIM_THR,
                 ylim=(0, 0.5), ylabel=DSIGMA_YLABEL,
-                ratio_to=0, ratio_ylim=(0.8, 2),
-                bands=bands, figsize=(8, 6), output="plot7_mttbar_toponium")
+                ratio_to=0, ratio_ylim=(0.8, 3.5),
+                bands=bands, figsize=(8, 6),
+                legend_loc="upper left", legend_bbox=(0.03, 0.91),
+                output="plot7_mttbar_toponium")
 
 
 # ── Plot 8: D NRC nominal vs NRCi0+Fuks vs NRCi0+Toy, ratio ─────────────────
@@ -821,8 +891,9 @@ def plot8_D_toponium():
     w_nom   = df_nrc[W_NOM].to_numpy()
     w_i0    = df_nrc[W_NRC_I0].to_numpy()
 
-    m_fuks, cos_fuks, w_fuks = _mcw("fuks")
-    m_toy,  cos_toy,  w_toy  = _mcw("toy")
+    m_fuks,    cos_fuks,    w_fuks    = _mcw("fuks")
+    m_toy,     cos_toy,     w_toy     = _mcw("toy")
+    m_singlet, cos_singlet, w_singlet = _mcw("singlet")
 
     s_nom  = norm_stats(m_nrc, cos_nrc, w_nom, BIN_EDGES_D)
     s_fuks = _xs_combined_stats(m_nrc, cos_nrc, w_i0,   XS_HVQ,
@@ -830,14 +901,20 @@ def plot8_D_toponium():
     s_toy  = _xs_combined_stats(m_nrc, cos_nrc, w_i0,   XS_HVQ,
                                  m_toy,  cos_toy,  w_toy,  XS_TOPONIUM, BIN_EDGES_D)
 
-    v_nom,  e_nom  = D_diff(s_nom)
-    v_fuks, e_fuks = D_diff(s_fuks)
-    v_toy,  e_toy  = D_diff(s_toy)
+    # NRCi0 + GFRW − singlet: subtract singlet's xs-scaled normalised stats
+    s_singlet = scale_stats(norm_stats(m_singlet, cos_singlet, w_singlet, BIN_EDGES_D), XS_SINGLET)
+    s_fuks_ms = subtract_stats(s_fuks, s_singlet)
+
+    v_nom,     e_nom     = D_diff(s_nom)
+    v_fuks,    e_fuks    = D_diff(s_fuks)
+    v_toy,     e_toy     = D_diff(s_toy)
+    v_fuks_ms, e_fuks_ms = D_diff(s_fuks_ms)
 
     curves = [
-        {"vals": v_nom,  "errs": e_nom,  "label": LABEL["nrc_nominal"], "color": COLOR["nrc_nominal"]},
-        {"vals": v_fuks, "errs": e_fuks, "label": LABEL["nrc_i0_fuks"], "color": COLOR["nrc_i0_fuks"]},
-        {"vals": v_toy,  "errs": e_toy,  "label": LABEL["nrc_i0_toy"],  "color": COLOR["nrc_i0_toy"]},
+        {"vals": v_nom,     "errs": e_nom,     "label": LABEL["nrc_nominal"],               "color": COLOR["nrc_nominal"]},
+        {"vals": v_fuks,    "errs": e_fuks,    "label": LABEL["nrc_i0_fuks"],               "color": COLOR["nrc_i0_fuks"]},
+        {"vals": v_fuks_ms, "errs": e_fuks_ms, "label": LABEL["nrc_i0_fuks_minus_singlet"], "color": COLOR["nrc_i0_fuks_minus_singlet"]},
+        {"vals": v_toy,     "errs": e_toy,     "label": LABEL["nrc_i0_toy"],                "color": COLOR["nrc_i0_toy"]},
     ]
     plot_D(BIN_EDGES_D, curves, xlim=XLIM_FULL,
            ratio_to=0, ratio_ylim=(0.5, 1.5),
@@ -850,7 +927,8 @@ def plot8_D_toponium():
 
 def main():
     print("Loading data …")
-    for name in ["hvq", "amcatnlo", "madgraph", "nrc", "fuks", "toy"]:
+    for name in ["hvq", "madspin", "amcatnlo", "madgraph",
+                 "nrc", "fuks", "toy", "singlet"]:
         _load(name)
 
     print("\nGenerating plots …")
