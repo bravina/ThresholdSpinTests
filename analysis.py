@@ -47,6 +47,7 @@ XS_SINGLET  = 0.07     # Toponium singlet xs
 
 LABEL = {
     "hvq":                       r"Ph hvq + Py8",
+    "minnlops":                  r"Ph MiNNLOps + Py8",
     "madspin":                   r"Ph hvq + MadSpin + Py8",
     "amcatnlo":                  r"aMC@NLO + Py8",
     "madgraph":                  r"MadGraph (parton-level)",
@@ -69,6 +70,7 @@ LABEL = {
 
 COLOR = {
     "hvq":                       "#1f77b4",
+    "minnlops":                  "#17becf",
     "madspin":                   "#ff7f0e",
     "amcatnlo":                  "#d62728",
     "madgraph":                  "#2ca02c",
@@ -101,6 +103,7 @@ _CACHE: dict[str, pd.DataFrame] = {}
 
 _PATHS = {
     "hvq":      DATA_DIR / "cache_hvq_afterFSR.parquet",
+    "minnlops": DATA_DIR / "cache_minnlops_afterFSR.parquet",
     "madspin":  DATA_DIR / "cache_madspin_afterFSR.parquet",
     "amcatnlo": DATA_DIR / "cache_amcatnlo_afterFSR.parquet",
     "madgraph": DATA_DIR / "cache_MadGraph_LO_lhe.parquet",
@@ -595,9 +598,11 @@ def plot1_mttbar_generators():
     curves = []
     for name, key in [
         ("hvq",      "hvq"),
+        ("minnlops", "minnlops"),
         ("madspin",  "madspin"),
         ("amcatnlo", "amcatnlo"),
         ("madgraph", "madgraph"),
+        ("sherpa",   "sherpa"),
     ]:
         m, w = _mw(name)
         v, e = weighted_hist(m, w, BIN_EDGES_M)
@@ -614,9 +619,11 @@ def plot2_D_generators():
     print("Plot 2: D — generators")
     curves = [
         _make_D_curve("hvq",      "hvq"),
+        _make_D_curve("minnlops", "minnlops"),
         _make_D_curve("madspin",  "madspin"),
         _make_D_curve("amcatnlo", "amcatnlo"),
         _make_D_curve("madgraph", "madgraph"),
+        _make_D_curve("sherpa",   "sherpa"),
     ]
     plot_D(BIN_EDGES_D, curves, xlim=XLIM_FULL,
            figsize=(8, 5), output="plot2_D_generators")
@@ -632,9 +639,11 @@ def plot3_D_channels():
     channels  = ["gg", "qq", "qg"]
     gen_specs = [
         ("hvq",      "hvq",      "-"),
+        ("minnlops", "minnlops", (0, (4, 2))),
         ("madspin",  "madspin",  "-."),
         ("amcatnlo", "amcatnlo", "--"),
         ("madgraph", "madgraph", ":"),
+        ("sherpa",   "sherpa",   (0, (1, 1))),
     ]
     x = 0.5 * (BIN_EDGES_D[:-1] + BIN_EDGES_D[1:])
 
@@ -927,7 +936,7 @@ def plot8_D_toponium():
 
 def main():
     print("Loading data …")
-    for name in ["hvq", "madspin", "amcatnlo", "madgraph",
+    for name in ["hvq", "minnlops", "madspin", "amcatnlo", "madgraph", "sherpa",
                  "nrc", "fuks", "toy", "singlet"]:
         _load(name)
 
