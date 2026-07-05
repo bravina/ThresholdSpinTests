@@ -14,6 +14,7 @@ import matplotlib.gridspec as gridspec
 from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle as MplRect
 from matplotlib.transforms import blended_transform_factory
+from matplotlib.legend_handler import HandlerTuple
 from pathlib import Path
 
 matplotlib.rcParams.update({
@@ -94,42 +95,42 @@ SETUPS: dict[str, dict] = {
     "mnn": {
         "label":        r"Ph MiNNLOps + Py8",
         "legend_label": "Ph MiNNLOps + Py8 (no NRC)",
-        "color": "#1f77b4", "marker": "o", "solid": False, "no_err": False,
+        "color": "#1f77b4", "marker": "s", "solid": False, "no_err": False,
     },
     "mnn_corr": {
         "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.)",
         "legend_label": "Ph MiNNLOps + gg+qq corr.",
-        "color": "#1f77b4", "marker": "o", "solid": True,  "no_err": False,
+        "color": "#1f77b4", "marker": "s", "solid": True,  "no_err": False,
     },
     "mnn_fuks": {
         "label":        r"Ph MiNNLOps + Py8 + $t\bar{t}_\mathrm{GFRW}$",
         "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$",
-        "color": "#d62728", "marker": "o", "solid": False, "no_err": False,
+        "color": "#d62728", "marker": "s", "solid": False, "no_err": False,
     },
     "mnn_fuks_ms": {
         "label":        r"Ph MiNNLOps + Py8 + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
         "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
-        "color": "#ff7f0e", "marker": "o", "solid": False, "no_err": False,
+        "color": "#ff7f0e", "marker": "s", "solid": False, "no_err": False,
     },
     "mnn_toy": {
         "label":        r"Ph MiNNLOps + Py8 + $\eta_t$",
         "legend_label": r"+ $\eta_t$",
-        "color": "#2ca02c", "marker": "o", "solid": False, "no_err": False,
+        "color": "#2ca02c", "marker": "s", "solid": False, "no_err": False,
     },
     "corr_mnn_fuks": {
         "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.) + $t\bar{t}_\mathrm{GFRW}$",
         "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ [corr.]",
-        "color": "#d62728", "marker": "o", "solid": True,  "no_err": False,
+        "color": "#d62728", "marker": "s", "solid": True,  "no_err": False,
     },
     "corr_mnn_fuks_ms": {
         "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.) + $t\bar{t}_\mathrm{GFRW}$ $-$ singlet",
         "legend_label": r"+ $t\bar{t}_\mathrm{GFRW}$ $-$ singlet [corr.]",
-        "color": "#ff7f0e", "marker": "o", "solid": True,  "no_err": False,
+        "color": "#ff7f0e", "marker": "s", "solid": True,  "no_err": False,
     },
     "corr_mnn_toy": {
         "label":        r"Ph MiNNLOps + Py8 (gg+qq corr.) + $\eta_t$",
         "legend_label": r"+ $\eta_t$ [corr.]",
-        "color": "#2ca02c", "marker": "o", "solid": True,  "no_err": False,
+        "color": "#2ca02c", "marker": "s", "solid": True,  "no_err": False,
     },
 }
 
@@ -191,6 +192,27 @@ WITH_TOP_GROUPS_MNN = [
 
 PANEL_GROUPS_HVQ = [ALL_GROUPS, NO_TOP_GROUPS,     WITH_TOP_GROUPS,     ALL_GROUPS]
 PANEL_GROUPS_MNN = [ALL_GROUPS_MNN, NO_TOP_GROUPS_MNN, WITH_TOP_GROUPS_MNN, ALL_GROUPS_MNN]
+
+# ── Combined (hvq circles + minnlops squares) ──────────────────────────────────
+# Each cluster is a tuple of (hollow, solid) pairs; multiple pairs in one cluster
+# are drawn at the same x-position with symmetric offsets.
+ALL_GROUPS_COMB = [
+    (("hvq",        "hvq_corr"),      ("mnn",        "mnn_corr")),
+    (("hvq_fuks",   "corr_hvq_fuks"), ("mnn_fuks",   "corr_mnn_fuks")),
+    (("hvq_fuks_ms","corr_hvq_fuks_ms"),("mnn_fuks_ms","corr_mnn_fuks_ms")),
+    (("hvq_toy",    "corr_hvq_toy"),  ("mnn_toy",    "corr_mnn_toy")),
+    (("nrc_nominal", None),),
+]
+NO_TOP_GROUPS_COMB = [
+    (("hvq", "hvq_corr"), ("mnn", "mnn_corr")),
+]
+WITH_TOP_GROUPS_COMB = [
+    (("hvq_fuks",   "corr_hvq_fuks"), ("mnn_fuks",   "corr_mnn_fuks")),
+    (("hvq_fuks_ms","corr_hvq_fuks_ms"),("mnn_fuks_ms","corr_mnn_fuks_ms")),
+    (("hvq_toy",    "corr_hvq_toy"),  ("mnn_toy",    "corr_mnn_toy")),
+    (("nrc_nominal", None),),
+]
+PANEL_GROUPS_COMB = [ALL_GROUPS_COMB, NO_TOP_GROUPS_COMB, WITH_TOP_GROUPS_COMB, ALL_GROUPS_COMB]
 
 # ── Measurements ──────────────────────────────────────────────────────────────
 
@@ -464,16 +486,17 @@ def print_table(results: dict, panel_groups: list | None = None) -> None:
         panel_groups = [m["groups"] for m in MEASUREMENTS]
     for pi, meas in enumerate(MEASUREMENTS):
         print(f"\nPanel {pi + 1}:  {meas['ref']}   [{meas['sel_plain']}]")
-        print(f"  {'Measurement':55s}  D = {meas['D']:+.3f}  "
+        print(f"  {'Measurement':65s}  D = {meas['D']:+.3f}  "
               f"+{meas['err_hi']:.3f} / -{meas['err_lo']:.3f}")
         print(f"  {'─' * 75}")
-        for hollow_key, solid_key in panel_groups[pi]:
-            for k, style in [(hollow_key, "hollow"), (solid_key, "solid ")]:
-                if k is None:
-                    continue
-                D_val, err = results[(pi, k)]
-                lbl = SETUPS[k]["label"]
-                print(f"  [{style}] {lbl:55s}  D = {D_val:+.3f} ± {err:.3f}")
+        for cluster in panel_groups[pi]:
+            for _, hollow_key, solid_key in _iter_pairs(cluster):
+                for k, style in [(hollow_key, "hollow"), (solid_key, "solid ")]:
+                    if k is None:
+                        continue
+                    D_val, err = results[(pi, k)]
+                    lbl = SETUPS[k]["label"]
+                    print(f"  [{style}] {lbl:65s}  D = {D_val:+.3f} ± {err:.3f}")
     print()
 
 
@@ -485,7 +508,8 @@ def _errorbar_kw(key: str) -> dict:
         color=s["color"],
         marker=s["marker"],
         ms=6.5,
-        mfc=s["color"] if s["solid"] else "none",
+        fillstyle="full",
+        mfc=s["color"] if s["solid"] else "white",
         mew=1.5,
         capsize=0,
         lw=0,
@@ -497,7 +521,8 @@ def _errorbar_kw(key: str) -> dict:
 def make_plot(results: dict,
               panel_groups: list | None = None,
               legend_config_keys: list | None = None,
-              outfile: str = "compare_D_measurements.pdf") -> None:
+              outfile: str = "compare_D_measurements.pdf",
+              combined_legend: bool = False) -> None:
     if panel_groups is None:
         panel_groups = [m["groups"] for m in MEASUREMENTS]
     if legend_config_keys is None:
@@ -534,21 +559,27 @@ def make_plot(results: dict,
         ax.axhline(meas["D"], color="#555555", lw=1.2, zorder=1)
 
         # Predictions
-        for xi, (hollow_key, solid_key) in enumerate(groups):
-            for k in (hollow_key, solid_key):
-                if k is None:
-                    continue
-                D_val, err = results[(pi, k)]
-                s = SETUPS[k]
-                if s["no_err"]:
-                    # Marker only — no error bar
-                    ax.plot(xi, D_val,
-                            marker=s["marker"], ms=8,
-                            color=s["color"],
-                            mfc=s["color"] if s["solid"] else "none",
-                            mew=1.5, ls="", zorder=4)
-                else:
-                    ax.errorbar(xi, D_val, yerr=err, **_errorbar_kw(k))
+        for xi, cluster in enumerate(groups):
+            for x_off, hollow_key, solid_key in _iter_pairs(cluster):
+                for k in (hollow_key, solid_key):
+                    if k is None:
+                        continue
+                    D_val, err = results[(pi, k)]
+                    s = SETUPS[k]
+                    if s["no_err"]:
+                        ax.plot(xi + x_off, D_val,
+                                marker=s["marker"], ms=8,
+                                color=s["color"],
+                                fillstyle="full",
+                                mfc=s["color"] if s["solid"] else "white",
+                                mew=1.5, ls="", zorder=4)
+                    else:
+                        #ax.errorbar(xi + x_off, D_val, yerr=err, **_errorbar_kw(k))
+                        ax.plot(xi + x_off, D_val,
+                                marker=s["marker"], ms=6.5,
+                                color=s["color"],
+                                mfc=s["color"] if s["solid"] else "none",
+                                mew=1.5, ls="", zorder=3)
 
         # Axis styling
         ax.set_xlim(-0.5, n - 0.5)
@@ -574,37 +605,110 @@ def make_plot(results: dict,
                  transform=axes[0].transAxes, ha="left", va="top",
                  fontsize=11, fontweight="bold")
 
-    # ── Legend (inside the plot, spanning panels 1–2) ────────────────────────
+    # ── Legend ───────────────────────────────────────────────────────────────
     def _proxy(key):
         s = SETUPS[key]
         return Line2D([0], [0],
                       color=s["color"], marker=s["marker"], ms=7,
+                      fillstyle="full",
                       mfc=s["color"] if s["solid"] else "none",
                       mew=1.5, lw=0, ls="")
 
-    leg_handles = [_proxy(k) for k in legend_config_keys]
-    leg_labels  = [SETUPS[k]["legend_label"] for k in legend_config_keys]
+    _SPACER = Line2D([], [], lw=0, ms=0, marker="none")
 
-    # Style indicators: hollow circle = uncorrected, solid circle = gg+qq corrected
-    leg_handles += [
-        Line2D([0], [0], color="grey", marker="o", ms=7,
-               mfc="none", mew=1.5, lw=0, ls=""),
-        Line2D([0], [0], color="grey", marker="o", ms=7,
-               mfc="grey", mew=0,   lw=0, ls=""),
-    ]
-    leg_labels += ["uncorrected", "gg+qq corrected"]
+    if combined_legend:
+        # 3-column layout (row-interleaved for column-major visual appearance):
+        #   Col 1: hvq baseline + toponium + NRC  (5 rows)
+        #   Col 2: mnn baseline + toponium + spacer
+        #   Col 3: style indicators (top 2 rows) + spacers
+        col1_keys = ["hvq", "hvq_fuks", "hvq_fuks_ms", "hvq_toy", "nrc_nominal"]
+        col2_keys = ["mnn", "mnn_fuks", "mnn_fuks_ms", "mnn_toy", None]
 
-    # Figure-level legend anchored just below the Spin@Threshold'26 label in axes[0].
-    # Using fig.legend() ensures it is never clipped by adjacent panels.
-    fig.legend(
-        leg_handles, leg_labels,
-        loc="upper left",
-        bbox_to_anchor=(0.04, 0.89),
-        bbox_transform=axes[0].transAxes,
-        ncol=2, fontsize=8.5,
-        frameon=False,
-        handlelength=0.8, handletextpad=0.4, columnspacing=1.0,
-    )
+        def _pair_handle(marker1, marker2, filled):
+            kw = dict(ms=5.5, lw=0, mew=1.5)
+            return (
+                Line2D([0],[0], color="grey", marker=marker1,
+                       mfc="grey" if filled else "none", **kw),
+                Line2D([0],[0], color="grey", marker=marker2,
+                       mfc="grey" if filled else "none", **kw),
+            )
+
+        col3_handles = [_pair_handle("o","s",False), _pair_handle("o","s",True),
+                        _SPACER, _SPACER, _SPACER]
+        col3_labels  = ["uncorrected", "gg+qq corrected", "", "", ""]
+
+        # leg_handles, leg_labels = [], []
+        # for r in range(5):
+        #     k1 = col1_keys[r]
+        #     leg_handles.append(_proxy(k1));  leg_labels.append(SETUPS[k1]["legend_label"])
+        #     k2 = col2_keys[r]
+        #     if k2 is None:
+        #         leg_handles.append(_SPACER); leg_labels.append("")
+        #     else:
+        #         leg_handles.append(_proxy(k2)); leg_labels.append(SETUPS[k2]["legend_label"])
+        #     leg_handles.append(col3_handles[r])
+        #     leg_labels.append(col3_labels[r])
+        leg_handles = [
+            _proxy("hvq"),
+            _proxy("hvq_fuks"),
+            _proxy("hvq_fuks_ms"),
+            _proxy("hvq_toy"),
+
+            _proxy("mnn"),
+            _proxy("mnn_fuks"),
+            _proxy("mnn_fuks_ms"),
+            _proxy("mnn_toy"),
+
+            _proxy("nrc_nominal"),
+            col3_handles[0],
+            col3_handles[1],
+            _SPACER,
+        ]
+
+        leg_labels = [
+            SETUPS["hvq"]["legend_label"],
+            SETUPS["hvq_fuks"]["legend_label"],
+            SETUPS["hvq_fuks_ms"]["legend_label"],
+            SETUPS["hvq_toy"]["legend_label"],
+
+            SETUPS["mnn"]["legend_label"],
+            SETUPS["mnn_fuks"]["legend_label"],
+            SETUPS["mnn_fuks_ms"]["legend_label"],
+            SETUPS["mnn_toy"]["legend_label"],
+
+            SETUPS["nrc_nominal"]["legend_label"],            
+            "uncorrected",
+            "gg+qq corrected",
+            "",
+        ]
+
+        fig.legend(
+            leg_handles, leg_labels,
+            loc="upper left",
+            bbox_to_anchor=(0.04, 0.89),
+            bbox_transform=axes[0].transAxes,
+            ncol=3, fontsize=8.5, frameon=False,
+            handlelength=1.0, handletextpad=0.4, columnspacing=1.0,
+            handler_map={tuple: HandlerTuple(ndivide=None, pad=0.8)},
+        )
+    else:
+        leg_handles = [_proxy(k) for k in legend_config_keys]
+        leg_labels  = [SETUPS[k]["legend_label"] for k in legend_config_keys]
+        leg_handles += [
+            Line2D([0],[0], color="grey", marker="o", ms=7,
+                   mfc="none", mew=1.5, lw=0, ls=""),
+            Line2D([0],[0], color="grey", marker="o", ms=7,
+                   mfc="grey", mew=0,   lw=0, ls=""),
+        ]
+        leg_labels += ["uncorrected", "gg+qq corrected"]
+        fig.legend(
+            leg_handles, leg_labels,
+            loc="upper left",
+            bbox_to_anchor=(0.04, 0.89),
+            bbox_transform=axes[0].transAxes,
+            ncol=2, fontsize=8.5, frameon=False,
+            handlelength=0.8, handletextpad=0.4, columnspacing=1.0,
+        )
 
     # ── Layout ────────────────────────────────────────────────────────────────
     fig.subplots_adjust(top=0.94, bottom=0.26, left=0.08, right=0.99)
@@ -624,17 +728,52 @@ def make_plot(results: dict,
         fig.text(xc, y, text, ha="center", va="top", **kw)
 
     for pi in [0, 3]:
-        xc   = (ppos[pi].x0 + ppos[pi].x1) / 2
-        ybot = ppos[pi].y0 - 0.010
-        ftxt(xc, ybot,      MEASUREMENTS[pi]["ref"],
-             fontsize=8, style="italic", color="#444444")
-        ftxt(xc, ybot - LH, MEASUREMENTS[pi]["sel_tex"], fontsize=8)
+        # xc   = (ppos[pi].x0 + ppos[pi].x1) / 2
+        # ybot = ppos[pi].y0 - 0.010
+        # ftxt(xc, ybot,      MEASUREMENTS[pi]["ref"],
+        #      fontsize=8, style="italic", color="#444444")
+        # ftxt(xc, ybot - LH, MEASUREMENTS[pi]["sel_tex"], fontsize=8)
+        axes[pi].text(
+            0.5, 0.03,
+            MEASUREMENTS[pi]["ref"],
+            transform=axes[pi].transAxes,
+            ha="center", va="bottom",
+            fontsize=8, style="italic", color="#444444",
+        )
 
-    ybot      = ppos[1].y0 - 0.010
-    xc_shared = (ppos[1].x0 + ppos[2].x1) / 2
-    ftxt(xc_shared, ybot,      MEASUREMENTS[1]["ref"],
-         fontsize=8, style="italic", color="#444444")
-    ftxt(xc_shared, ybot - LH, MEASUREMENTS[1]["sel_tex"], fontsize=8)
+        axes[pi].text(
+            0.5, 0.08,
+            MEASUREMENTS[pi]["sel_tex"],
+            transform=axes[pi].transAxes,
+            ha="center", va="bottom",
+            fontsize=8,
+        )
+
+    # ybot      = ppos[1].y0 - 0.010
+    # xc_shared = (ppos[1].x0 + ppos[2].x1) / 2
+    # ftxt(xc_shared, ybot,      MEASUREMENTS[1]["ref"],
+    #      fontsize=8, style="italic", color="#444444")
+    # ftxt(xc_shared, ybot - LH, MEASUREMENTS[1]["sel_tex"], fontsize=8)
+    xc_shared = 0.5 * (ppos[1].x0 + ppos[2].x1)
+    fig.text(
+        xc_shared,
+        ppos[1].y0 + 0.03 * ppos[1].height,
+        MEASUREMENTS[1]["ref"],
+        ha="center",
+        va="bottom",
+        fontsize=8,
+        style="italic",
+        color="#444444",
+    )
+
+    fig.text(
+        xc_shared,
+        ppos[1].y0 + 0.08 * ppos[1].height,
+        MEASUREMENTS[1]["sel_tex"],
+        ha="center",
+        va="bottom",
+        fontsize=8,
+    )
 
     # "without/with η_t" inside panels 1 & 2, horizontally centred in each panel,
     # at a fixed data-y so they are vertically aligned (shared y-axis).
@@ -654,16 +793,36 @@ def make_plot(results: dict,
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 
+def _iter_pairs(cluster):
+    """
+    Yield (x_offset, hollow_key, solid_key) from a group cluster.
+
+    cluster forms:
+      (hollow_key, solid_key)           — simple pair, drawn at offset 0
+      ((h1,s1), (h2,s2), ...)           — multiple pairs with symmetric ±offsets
+    """
+    if isinstance(cluster[0], (str, type(None))):
+        yield 0.0, cluster[0], cluster[1]
+    else:
+        n = len(cluster)
+        step = 0.20
+        offsets = [step * (i - (n - 1) / 2) for i in range(n)]
+        for off, (h, s) in zip(offsets, cluster):
+            yield off, h, s
+
+
 def _compute_for_variant(panel_groups: list) -> dict:
     results: dict[tuple[int, str], tuple[float, float]] = {}
     for pi, (meas, groups) in enumerate(zip(MEASUREMENTS, panel_groups)):
         seen: set[str] = set()
-        for hollow_key, solid_key in groups:
-            for key in (hollow_key, solid_key):
-                if key is None or key in seen:
-                    continue
-                seen.add(key)
-                results[(pi, key)] = compute_D(key, meas["m_lo"], meas["m_hi"], meas["bz_max"])
+        for cluster in groups:
+            for _, hollow_key, solid_key in _iter_pairs(cluster):
+                for key in (hollow_key, solid_key):
+                    if key is None or key in seen:
+                        continue
+                    seen.add(key)
+                    results[(pi, key)] = compute_D(
+                        key, meas["m_lo"], meas["m_hi"], meas["bz_max"])
     return results
 
 
@@ -672,21 +831,29 @@ def main() -> None:
     for name in ["hvq", "minnlops", "nrc", "fuks", "toy", "singlet"]:
         _load(name)
 
-    print("\n── Ph hvq variant ────────────────────────────────────────────────────────")
-    results_hvq = _compute_for_variant(PANEL_GROUPS_HVQ)
-    print_table(results_hvq, PANEL_GROUPS_HVQ)
-    make_plot(results_hvq,
-              panel_groups=PANEL_GROUPS_HVQ,
-              legend_config_keys=LEGEND_CONFIG_KEYS,
-              outfile="compare_D_measurements.pdf")
+    # print("\n── Ph hvq variant ────────────────────────────────────────────────────────")
+    # results_hvq = _compute_for_variant(PANEL_GROUPS_HVQ)
+    # print_table(results_hvq, PANEL_GROUPS_HVQ)
+    # make_plot(results_hvq,
+    #           panel_groups=PANEL_GROUPS_HVQ,
+    #           legend_config_keys=LEGEND_CONFIG_KEYS,
+    #           outfile="compare_D_measurements.pdf")
 
-    print("\n── Ph MiNNLOps variant ───────────────────────────────────────────────────")
-    results_mnn = _compute_for_variant(PANEL_GROUPS_MNN)
-    print_table(results_mnn, PANEL_GROUPS_MNN)
-    make_plot(results_mnn,
-              panel_groups=PANEL_GROUPS_MNN,
-              legend_config_keys=LEGEND_CONFIG_KEYS_MNN,
-              outfile="compare_D_measurements_minnlops.pdf")
+    # print("\n── Ph MiNNLOps variant ───────────────────────────────────────────────────")
+    # results_mnn = _compute_for_variant(PANEL_GROUPS_MNN)
+    # print_table(results_mnn, PANEL_GROUPS_MNN)
+    # make_plot(results_mnn,
+    #           panel_groups=PANEL_GROUPS_MNN,
+    #           legend_config_keys=LEGEND_CONFIG_KEYS_MNN,
+    #           outfile="compare_D_measurements_minnlops.pdf")
+
+    print("\n── Combined hvq + MiNNLOps ──────────────────────────────────────────────")
+    results_comb = _compute_for_variant(PANEL_GROUPS_COMB)
+    print_table(results_comb, PANEL_GROUPS_COMB)
+    make_plot(results_comb,
+              panel_groups=PANEL_GROUPS_COMB,
+              outfile="compare_D_measurements_combined.pdf",
+              combined_legend=True)
 
 
 if __name__ == "__main__":
