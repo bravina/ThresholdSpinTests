@@ -19,6 +19,36 @@
 \usepackage{xspace}
 \usepackage{nicefrac}
 
+\newcommand{\ttbar}{{\ensuremath{t\bar{t}}}\xspace}
+\newcommand{\TeV}{\ensuremath{\text{Te\kern -0.1em V}}}
+\newcommand{\GeV}{\ensuremath{\text{Ge\kern -0.1em V}}}
+\newcommand{\ifb}{\mbox{fb\(^{-1}\)}}
+\newcommand{\ipb}{\mbox{pb\(^{-1}\)}}
+\newcommand{\chel}{\ensuremath{c_\mathrm{hel}}\xspace}
+\newcommand{\chan}{\ensuremath{c_\mathrm{han}}\xspace}
+\newcommand{\bbfourl}{\ensuremath{bb4\ell}\xspace}
+\newcommand{\MiNNLO}{\texttt{MiNNLOps}\xspace}
+\newcommand{\mttbar}{\ensuremath{m_{\ttbar}}\xspace}
+\NewDocumentCommand {\AtlasMC} { o m } {%
+  \IfNoValueTF {#1} {%
+    \textsc{#2}\xspace%
+  }{%
+    \textsc{#2}\,#1\xspace%
+  }%
+}
+\NewDocumentCommand {\MADGRAPH} { o } {\AtlasMC[#1]{MadGraph}}
+\NewDocumentCommand {\MadGraph} { o } {\AtlasMC[#1]{MadGraph}}
+\NewDocumentCommand {\MGNLO} { o } {\AtlasMC[#1]{MadGraph5\_aMC@NLO}} %short-hand
+\NewDocumentCommand {\MCatNLO} { o } {\AtlasMC[#1]{MC@NLO}}
+\NewDocumentCommand {\Pythia} { o } {\AtlasMC[#1]{Pythia}}
+\NewDocumentCommand {\PYTHIA} { o } {\AtlasMC[#1]{Pythia}}
+\NewDocumentCommand {\Herwig} { o } {\AtlasMC[#1]{Herwig}}
+\NewDocumentCommand {\HERWIG} { o } {\AtlasMC[#1]{Herwig}}
+\NewDocumentCommand {\Sherpa} { o } {\AtlasMC[#1]{Sherpa}}
+\NewDocumentCommand {\SHERPA} { o } {\AtlasMC[#1]{Sherpa}}
+\NewDocumentCommand {\Powheg} { o } {\AtlasMC[#1]{Powheg}}
+\NewDocumentCommand {\POWHEG} { o } {\AtlasMC[#1]{Powheg}}
+
 \begin{document}
 
 \title{Top quark pair spin correlations at the threshold: a limitation of Monte Carlo generators}
@@ -35,9 +65,33 @@ Type the abstract here.
 
 \section{Introduction}
 
-Some text, citing Ref.~\cite{Aad2012}.
+The production of pairs of top-anti-top quarks (\ttbar) at the LHC offers an extremely rich phenomenological environment in which to study quantum chromodynamics (QCD), both perturbatively and non-perturbatively.
+The spin quantum number of the top quarks can be reconstructed from their decay products, owing to its extremely short lifetime $\mathcal{O}(10^{-25}s)$ that precludes hadronisation and spin decorrelation mechanisms, as well as to the maximally parity-violating nature of the weak interaction in the decay vertex, which strongly imprints the spin information onto the kinematics of the decay products.
+Near the \ttbar production threshold, $\mttbar\sim 2m_t=345~\GeV$, the spins of the top quarks are strongly anticorrelated, with the predominant $gg\to\ttbar$ production mode yielding a spin-singlet $^{1}S_0$ state.
+In recent years, this threshold regime has received renewed interest from the experimental and theoretical communities, in large part stemming from the seminal observation made in RefJuanRamonAfik that such a localised concentration of $^{1}S_0$ states could be interpreted as manifesting not just strong spin correlations but quantum spin entanglement -- opening the door to the application and study of quantum information theory to bare quarks, and generally to collider physics.
+
+The ATLAS and CMS Collaboration have since both conducted searches for this entanglement effect near threshold, and indeed observed it in the dileptonic \ttbar decay channel.
+Charged leptons are near-perfect spin analysers, allowing to easily infer the spin states of each top quark and of the \ttbar system as a whole, and are cleanly reconstructed by the two detectors.
+The dileptonic final state only has limited contributions from background processes and, with the LHC Run 2 dataset, offers plenty of statistics to make precise measurements of the signal process.
+Measurements of the \ttbar process at the LHC however heavily rely on accurate Monte Carlo (MC) event generators, both for the production cross section (nowadays up to next-to-next-to-leading order, NNLO QCD) and the treatment of the decays (up to NLO QCD accuracy).
+The amount of spin correlations and spin entanglement measured in the ATLAS and CMS analyses was found to be in excess of what was predicted by state-of-the-art MC generators, prompting further investigation into many technical aspects of top physics at the threshold and its simulation.
+Of particular salience was the omission of non-relativistic QCD (NRQCD) effects, known for more than 30 years to give rise to a small localised enhancement of the cross section and to the formation of a quasi-bound state of the top quarks, loosely dubbed ``toponium'' in what follows.
+Toponium formation, originally not expected to be observable at the LHC due to its below-percent contribution to the \ttbar production cross section and the limited experimental resolution in \mttbar, however manifests itself mostly as a spin-singlet pseudo-scalar contribution, and was therefore a prime contender to explain the observed discrepancies.
+
+Further analysis of the LHC Run 2 dataset, focused on the spin correlations of top quarks near the threshold and now equipped with first rudimentary MC simulations of toponium-like effects, revealed a $>5\sigma$ departure from the baseline perturbative QCD (pQCD) hypothesis, consistent with the formation of a pseudo-scalar quasi-bound state of the top quarks.
+While these new measurements by the ATLAS and CMS Collaborations all conclude an observation, they disagree at the level of up to $3.8\sigma$ with the latest NRQCD prediction, and to up to $4.7\sigma$ in the measured cross section.
+There is undeniably more development needed on the simulation of toponium effects in MC generators, while the upcoming experimental analyses of the twice-as-large LHC Run 3 dataset will be able to characterise the excess more precisely.
+In this work, we explore a so-far undocumented limitation of the MC generators used not for the toponium signal, but rather the overwhelming pQCD \ttbar background: the treatment of top quark spin correlations at and below threshold, which we posit may be improperly handled and could contribute to the observed discrepancies.
+
+The paper is organised as follows.
+In Section~\ref{sec:framework}, we briefly outline the phenomenological framework for the study of spin correlations in \ttbar production, before reviewing common choices of MC generators for the ATLAS and CMS analyses.
+In Section~\ref{sec:limitations}, we compare the behaviour of these various MC generators at different orders of accuracy in QCD as well as differentially in \mttbar, and find that they exhibit a constant pattern below threshold.
+We then propose an ad-hoc correction to estimate what the correct behaviour in this regime might be.
+In Section~\ref{sec:results}, we then turn to recent experimental measurements of \ttbar spin correlations and quantum entanglement, and evaluate the impact of this ad-hoc correction where possible to do so.
+Finally, we summarise our findings in Section~\ref{sec:conclusion} before providing a brief set of recommendations to guide the next generation of experimental measurements and, hopefully, help characterise more accurately the observed excess.
 
 \section{Phenomenological framework}
+\label{sec:framework}
 \subsection{Spin correlations in top pair production}
 \subsection{Simulations in Monte Carlo generators}
 \subsubsection{MadGraph}
@@ -48,15 +102,21 @@ Some text, citing Ref.~\cite{Aad2012}.
 \subsubsection{Modelling of toponium and non-relativistic QCD effects}
 
 \section{Limitations}
+\label{sec:limitations}
 \subsection{Top quark decay near the threshold region}
 \subsection{Predictions at and below threshold}
 \subsection{An ad-hoc correction}
 
 \section{Interpretation of experimental results}
+\label{sec:results}
 \subsection{ATLAS and CMS measurements of the top pair production threshold}
 \subsection{Discussion}
 
 \section{Conclusion}
+\label{sec:conclusion}
+\subsection{Recommendations for future measurements}
+
+Some text. Some more text. A lot more text.
 
 \acknowledgments{We thank the authors of Ref for sharing their code.}
 
