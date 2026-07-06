@@ -18,7 +18,12 @@
 \usepackage{placeins}
 \usepackage{xspace}
 \usepackage{nicefrac}
+\usepackage{physics}
 
+\DeclareMathOperator{\diag}{diag}
+\newcommand{\unitmat}[1]{\ensuremath{\mathbb{I}_{#1}}\xspace}
+\newcommand{\singlet}{\ensuremath{^{1}S_0}\xspace}
+\newcommand{\triplet}{\ensuremath{^{3}S_1}\xspace}
 \newcommand{\ttbar}{{\ensuremath{t\bar{t}}}\xspace}
 \newcommand{\TeV}{\ensuremath{\text{Te\kern -0.1em V}}}
 \newcommand{\GeV}{\ensuremath{\text{Ge\kern -0.1em V}}}
@@ -29,25 +34,25 @@
 \newcommand{\bbfourl}{\ensuremath{bb4\ell}\xspace}
 \newcommand{\MiNNLO}{\texttt{MiNNLOps}\xspace}
 \newcommand{\mttbar}{\ensuremath{m_{\ttbar}}\xspace}
-\NewDocumentCommand {\AtlasMC} { o m } {%
-  \IfNoValueTF {#1} {%
-    \textsc{#2}\xspace%
-  }{%
-    \textsc{#2}\,#1\xspace%
-  }%
-}
-\NewDocumentCommand {\MADGRAPH} { o } {\AtlasMC[#1]{MadGraph}}
-\NewDocumentCommand {\MadGraph} { o } {\AtlasMC[#1]{MadGraph}}
-\NewDocumentCommand {\MGNLO} { o } {\AtlasMC[#1]{MadGraph5\_aMC@NLO}} %short-hand
-\NewDocumentCommand {\MCatNLO} { o } {\AtlasMC[#1]{MC@NLO}}
-\NewDocumentCommand {\Pythia} { o } {\AtlasMC[#1]{Pythia}}
-\NewDocumentCommand {\PYTHIA} { o } {\AtlasMC[#1]{Pythia}}
-\NewDocumentCommand {\Herwig} { o } {\AtlasMC[#1]{Herwig}}
-\NewDocumentCommand {\HERWIG} { o } {\AtlasMC[#1]{Herwig}}
-\NewDocumentCommand {\Sherpa} { o } {\AtlasMC[#1]{Sherpa}}
-\NewDocumentCommand {\SHERPA} { o } {\AtlasMC[#1]{Sherpa}}
-\NewDocumentCommand {\Powheg} { o } {\AtlasMC[#1]{Powheg}}
-\NewDocumentCommand {\POWHEG} { o } {\AtlasMC[#1]{Powheg}}
+% \NewDocumentCommand {\AtlasMC} { o m } {%
+%   \IfNoValueTF {#1} {%
+%     \textsc{#2}\xspace%
+%   }{%
+%     \textsc{#2}\,#1\xspace%
+%   }%
+% }
+% \NewDocumentCommand {\MADGRAPH} { o } {\AtlasMC[#1]{MadGraph}}
+% \NewDocumentCommand {\MadGraph} { o } {\AtlasMC[#1]{MadGraph}}
+% \NewDocumentCommand {\MGNLO} { o } {\AtlasMC[#1]{MadGraph5\_aMC@NLO}} %short-hand
+% \NewDocumentCommand {\MCatNLO} { o } {\AtlasMC[#1]{MC@NLO}}
+% \NewDocumentCommand {\Pythia} { o } {\AtlasMC[#1]{Pythia}}
+% \NewDocumentCommand {\PYTHIA} { o } {\AtlasMC[#1]{Pythia}}
+% \NewDocumentCommand {\Herwig} { o } {\AtlasMC[#1]{Herwig}}
+% \NewDocumentCommand {\HERWIG} { o } {\AtlasMC[#1]{Herwig}}
+% \NewDocumentCommand {\Sherpa} { o } {\AtlasMC[#1]{Sherpa}}
+% \NewDocumentCommand {\SHERPA} { o } {\AtlasMC[#1]{Sherpa}}
+% \NewDocumentCommand {\Powheg} { o } {\AtlasMC[#1]{Powheg}}
+% \NewDocumentCommand {\POWHEG} { o } {\AtlasMC[#1]{Powheg}}
 
 \begin{document}
 
@@ -75,7 +80,7 @@ Charged leptons are near-perfect spin analysers, allowing to easily infer the sp
 The dileptonic final state only has limited contributions from background processes and, with the LHC Run 2 dataset, offers plenty of statistics to make precise measurements of the signal process.
 Measurements of the \ttbar process at the LHC however heavily rely on accurate Monte Carlo (MC) event generators, both for the production cross section (nowadays up to next-to-next-to-leading order, NNLO QCD) and the treatment of the decays (up to NLO QCD accuracy).
 The amount of spin correlations and spin entanglement measured in the ATLAS and CMS analyses was found to be in excess of what was predicted by state-of-the-art MC generators, prompting further investigation into many technical aspects of top physics at the threshold and its simulation.
-Of particular salience was the omission of non-relativistic QCD (NRQCD) effects, known for more than 30 years to give rise to a small localised enhancement of the cross section and to the formation of a quasi-bound state of the top quarks, loosely dubbed ``toponium'' in what follows.
+Of particular salience was the omission of non-relativistic QCD (NRQCD) effects, known for more than 30 years to give rise to a small localised enhancement of the cross section and to the formation of a quasi-bound state of the top quarks, loosely dubbed \emph{toponium} in what follows.
 Toponium formation, originally not expected to be observable at the LHC due to its below-percent contribution to the \ttbar production cross section and the limited experimental resolution in \mttbar, however manifests itself mostly as a spin-singlet pseudo-scalar contribution, and was therefore a prime contender to explain the observed discrepancies.
 
 Further analysis of the LHC Run 2 dataset, focused on the spin correlations of top quarks near the threshold and now equipped with first rudimentary MC simulations of toponium-like effects, revealed a $>5\sigma$ departure from the baseline perturbative QCD (pQCD) hypothesis, consistent with the formation of a pseudo-scalar quasi-bound state of the top quarks.
@@ -93,6 +98,35 @@ Finally, we summarise our findings in Section~\ref{sec:conclusion} before provid
 \section{Phenomenological framework}
 \label{sec:framework}
 \subsection{Spin correlations in top pair production}
+
+Following the formalism of Ref.Bernreuther, hadronic production of top quarks at the LHC can be expressed in the spin space of the top and anti-top quarks (indexed by $+$ and $-$ respectively) by the matrix $R$
+\begin{equation}\label{eq:production-matrix}
+  R \propto \sum_I A^{I} \unitmat{2}\otimes\unitmat{2} + \mathbf{B}^{I}_{+}\mathbf{\sigma}\otimes\unitmat{2} + \mathbf{B}^{I}_{-}\unitmat{2}\otimes\mathbf{\sigma} + \mathbf{C}^{I}\mathbf{\sigma}\otimes\mathbf{\sigma}
+\end{equation}
+where $\unitmat{2}$ is the $2\times 2$ unit matrix, $\mathbf{\sigma}$ are the Pauli matrices, and the sum runs over production modes $I=gg,q\bar{t},qg$.
+The functions $A^{I}$ determine the production cross sections and kinematic properties of the top quarks, while the 3-vectors $\mathbf{B}^{I}_\pm$ encode the top and anti-top spin polarisations and the $3\times 3$ matrix $\mathbf{C}^{I}$ describes the spin correlations between them.
+The picture can be completed by specifying the decays of the top quarks in the narrow-width approximation (NWA) as occuring via $t\to W^+b$, and we will for now focus on the dileptonic final state where both $W$ bosons decay to a charged lepton and a neutrino, and by specifying a set of spin quantisation axes.
+A common basis is the so-called \emph{helicity basis}, where one axis is identified with the direction of flight of the top quark in the \ttbar rest frame, another one is in the plane formed by the top quark and the incoming proton beam, and the last one completes the orthonormal set.
+At LO in QCD, one finds unpolarised but spin-correlated top quarks: the two vectors $\mathbf{B}^{I}_\pm$ are null, and the correlation matrix $\mathbf{C}$ is non-zero and almost diagonal in the helicity basis.
+There is some difference at NLO, mostly coming from the opening of the $qg$-initiated channel, but additional corrections from NLO to NNLO accuracy in QCD are small.
+
+In RefJuanRamonAfik, the simplified spin structure at LO QCD is used to probe a quantum-information-theoretic interpretation of the \ttbar spin density matrix, namely deriving a condition for quantum spin entanglement
+\begin{equation}\label{eq:qe}
+  D=\dfrac{\Tr\left[\mathbf{C}\right]}{3} < -\dfrac{1}{3}
+\end{equation}
+This condition is the direct consequence of the application of the Peres-Horodecki criterion for qubit-qubit entanglement; the inequation above is in fact a \emph{sufficient} condition for \ttbar entanglement, and applies at all orders and in all generality of the spin density matrix, i.e. also with non-zero polarisations and non-diagonal spin correlations.
+Near the production threshold, top quarks are predominantly produced with zero orbital angular momentum.
+The $q\bar{q}$-initiated production mode proceeds in an unpolarised \triplet spin-triplet state\footnote{An equal mixture of the $J_z=\pm1$ substates along the beam axis; $J_z=0$ is absent for massless quarks by helicity conservation. See Appendix~\ref{app:threshold}}, while the dominant $gg$-initiated mode instead produces a \singlet spin-singlet state due to Landau-Yang suppression.
+In the helicity basis, these (angular-averaged) configurations are described by
+\begin{align}
+  \singlet &: \mathbf{C}=\diag(-1,-1,-1)&&\Rightarrow D=-1,\\
+  \triplet &: \mathbf{C}=\diag(\tfrac{1}{3},\tfrac{2}{3},0)&&\Rightarrow D=+\tfrac{1}{3},
+\end{align}
+highlighting the maximally anti-correlated and rotation-invariant nature of the pseudo-scalar spin-singlet state, which is consequently maximally entangled; the
+triplet, by contrast, is a separable mixture.
+The criterion for quantum entanglement in Eq.~\eqref{eq:qe}, applied to a mixture of \singlet~and \triplet~\ttbar events, in fact simply requires that more than $50\%$ be in the \singlet state.
+
+
 \subsection{Simulations in Monte Carlo generators}
 \subsubsection{MadGraph}
 \subsubsection{AMCatNLO}
@@ -121,5 +155,66 @@ Some text. Some more text. A lot more text.
 \acknowledgments{We thank the authors of Ref for sharing their code.}
 
 \bibliography{main.bib}
+
+\appendix
+
+\section{Spin states at the threshold}
+\label{app:threshold}
+
+Near the production threshold, the \ttbar pair is produced in an $S$-wave.
+The $gg$ mode yields the spin-singlet \singlet configuration, while the
+$q\bar{q}$ mode yields the spin-triplet \triplet configuration restricted to
+the $J_z=\pm1$ substates along the beam axis $\hat{p}$, as $J_z=0$ is
+forbidden by helicity conservation for massless initial-state quarks.
+The corresponding spin density matrices are
+\begin{align}
+  \singlet &: \ \rho = \ket{\Psi}\bra{\Psi},
+  \quad \ket{\Psi} = \tfrac{1}{\sqrt{2}}
+    \left(\ket{\uparrow\downarrow}
+        - \ket{\downarrow\uparrow}\right), \\
+  \triplet &: \ \rho =
+    \tfrac{1}{2}\ket{\uparrow\uparrow}_{\hat{p}}\bra{\uparrow\uparrow}_{\hat{p}}
+  + \tfrac{1}{2}\ket{\downarrow\downarrow}_{\hat{p}}\bra{\downarrow\downarrow}_{\hat{p}}.
+\end{align}
+Both configurations are unpolarised, $\mathbf{B}_{+}=\mathbf{B}_{-}=0$: for
+the triplet, the opposite polarisations of the two substates cancel in the
+mixture.
+The spin correlation matrices
+$C_{ij} = \Tr\left[\rho\,\sigma_i\otimes\sigma_j\right]$, evaluated first in
+a \emph{beam basis} with $\hat{z}=\hat{p}$, read
+\begin{align}
+  \singlet &: \ \mathbf{C} = -\unitmat{3} = \diag(-1,-1,-1), \\
+  \triplet &: \ \mathbf{C} = \hat{p}\,\hat{p}^{\,T} = \diag(0,0,1).
+\end{align}
+The singlet is invariant under rotations, whereas the triplet is not.
+Rotating into the helicity basis $\{\hat{k},\hat{r},\hat{n}\}$ defined in
+Section~\ref{sec:framework}, with
+$\hat{p} = \cos\theta\,\hat{k} + \sin\theta\,\hat{r}$ and $\theta$ the
+top-quark scattering angle, one finds
+\begin{align}
+  \singlet &: \ \mathbf{C} = \diag(-1,-1,-1), \\
+  \triplet &: \ \mathbf{C} =
+  \begin{pmatrix}
+    \cos^2\theta & \sin\theta\cos\theta & 0 \\
+    \sin\theta\cos\theta & \sin^2\theta & 0 \\
+    0 & 0 & 0
+  \end{pmatrix}.
+\end{align}
+Averaging over the flat angular distribution at threshold,
+$\langle\cos^2\theta\rangle = \nicefrac{1}{3}$ while
+$\langle\sin\theta\cos\theta\rangle = 0$ by symmetry under
+$\cos\theta\to-\cos\theta$, yielding
+\begin{align}
+  \singlet &: \ \langle\mathbf{C}\rangle = \diag(-1,-1,-1)
+      && \Rightarrow \ D = -1, \\
+  \triplet &: \ \langle\mathbf{C}\rangle
+      = \diag(\tfrac{1}{3},\tfrac{2}{3},0)
+      && \Rightarrow \ D = +\tfrac{1}{3},
+\end{align}
+as quoted in Section~\ref{sec:framework}.
+The vanishing off-diagonal element can be recovered as the sign-weighted
+coefficient
+$C_{rk} = \langle\,\mathrm{sign}(\cos\theta)\,|\sin\theta\cos\theta|\,\rangle$,
+routinely measured in experimental analyses.
 
 \end{document}
