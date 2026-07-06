@@ -485,6 +485,7 @@ def plot_mttbar(bin_edges: np.ndarray, curves: list[dict],
                 ylabel: str = MTTBAR_YLABEL,
                 ratio_to: int | None = None,
                 ratio_ylim: tuple = (0.5, 1.5),
+                ratio_ylabel: str = "Ratio to nominal",
                 bands: list[dict] | None = None,
                 figsize: tuple = (8, 5),
                 log_y: bool = False,
@@ -529,7 +530,7 @@ def plot_mttbar(bin_edges: np.ndarray, curves: list[dict],
                 _draw_band(axr, bin_edges, rlo, rhi,
                            b["color"], "", alpha=b.get("alpha", 0.28))
         _draw_ratio_steps(axr, bin_edges, curves, ref_idx=ratio_to)
-        _style_ratio(axr, MTTBAR_XLABEL, xlim, ylim=ratio_ylim)
+        _style_ratio(axr, MTTBAR_XLABEL, xlim, ylim=ratio_ylim, ylabel=ratio_ylabel)
 
     if not has_ratio:
         fig.tight_layout()
@@ -541,6 +542,7 @@ def plot_D(bin_edges: np.ndarray, curves: list[dict],
            xlim: tuple, ylim: tuple = (-1.0, 1.0),
            ratio_to: int | None = None,
            ratio_ylim: tuple = (0.5, 1.5),
+           ratio_ylabel: str = "Ratio to nominal",
            figsize: tuple = (8, 5),
            xlabel: str = MTTBAR_XLABEL,
            output: str | None = None) -> None:
@@ -560,8 +562,7 @@ def plot_D(bin_edges: np.ndarray, curves: list[dict],
 
     if has_ratio:
         _draw_ratio_errorbars(axr, bin_edges, curves, ref_idx=ratio_to)
-        _style_ratio(axr, xlabel, xlim, ylim=ratio_ylim,
-                     ylabel=r"Ratio to nominal")
+        _style_ratio(axr, xlabel, xlim, ylim=ratio_ylim, ylabel=ratio_ylabel)
 
     if not has_ratio:
         fig.tight_layout()
@@ -812,6 +813,7 @@ def plot6_mttbar_nrc():
     plot_mttbar(BIN_EDGES_THR, curves, xlim=XLIM_THR,
                 ylim=(0, 0.5), ylabel=DSIGMA_YLABEL,
                 ratio_to=0, ratio_ylim=(0.8, 3.5),
+                ratio_ylabel="Ratio to no-NRC",
                 bands=bands, figsize=(8, 6),
                 legend_loc="upper left", legend_bbox=(0.03, 0.91),
                 output="plot6_mttbar_nrc")
@@ -923,6 +925,7 @@ def plot7_mttbar_toponium():
     plot_mttbar(BIN_EDGES_THR, curves, xlim=XLIM_THR,
                 ylim=(0, 0.5), ylabel=DSIGMA_YLABEL,
                 ratio_to=0, ratio_ylim=(0.8, 3.5),
+                ratio_ylabel="Ratio to no-NRC",
                 bands=bands, figsize=(8, 6),
                 legend_loc="upper left", legend_bbox=(0.03, 0.91),
                 legend_handles=leg_handles, legend_labels=leg_labels,
@@ -966,6 +969,7 @@ def plot8_D_toponium():
     ]
     plot_D(BIN_EDGES_D, curves, xlim=XLIM_FULL,
            ratio_to=0, ratio_ylim=(0.5, 1.5),
+           ratio_ylabel="Ratio to NRC",
            figsize=(8, 6), output="plot8_D_toponium")
 
 
@@ -980,14 +984,14 @@ def main():
         _load(name)
 
     print("\nGenerating plots …")
-   plot1_mttbar_generators()
-   plot2_D_generators()
-   plot3_D_channels()
-   plot4_D_corrections_diff()
-   plot5_D_corrections_cum()
-   plot6_mttbar_nrc()
-   plot7_mttbar_toponium()
-   plot8_D_toponium()
+    plot1_mttbar_generators()
+    plot2_D_generators()
+    plot3_D_channels()
+    plot4_D_corrections_diff()
+    plot5_D_corrections_cum()
+    plot6_mttbar_nrc()
+    plot7_mttbar_toponium()
+    plot8_D_toponium()
 
     print("\nDone.")
 
